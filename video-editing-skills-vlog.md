@@ -1,18 +1,11 @@
-# Video Editing Skills - Vlog Storyboard Generator
+---
+name: video-editing-skills-vlog
+description: "Vlog video editing storyboard generator using local FLAMA tool for AI-powered video analysis. Use this skill when: (1) User provides a folder containing video files and asks to create a vlog editing script/storyboard, (2) User requests video clip analysis and selection for vlog creation, (3) User wants to generate a JSON-format video editing plan with specified duration (e.g., 30 seconds, 60 seconds), (4) User mentions keywords like 'vlog剪辑', '视频剪辑脚本', 'video storyboard', or 'editing script'. This skill invokes the local flama.exe tool to analyze video segments using VLM, then generates professional storyboards with narrative structure, clip selection, voiceover suggestions, and timing information."
+---
 
-## Overview
+# Vlog Storyboard Generator
 
-This skill enables Claude (or any compatible LLM) to analyze video footage using the local FLAMA tool and generate professional vlog editing storyboards. The workflow combines AI-powered video understanding with creative storytelling to produce detailed, actionable editing scripts in JSON format.
-
-## Skill Metadata
-
-| Property | Value |
-|----------|-------|
-| Skill Name | video-editing-skills-vlog |
-| Version | 1.0.0 |
-| Category | Video Editing / Content Creation |
-| Complexity | Advanced |
-| Output Format | JSON Storyboard |
+This skill analyzes video footage using the local FLAMA tool and generates professional vlog editing storyboards in JSON format.
 
 ## Prerequisites
 
@@ -539,22 +532,6 @@ For TikTok/Reels/Shorts format:
 - Faster pacing: 1.5-2.5 second clips
 - Hook within first 3 seconds
 - Text-heavy for muted viewing
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2024-01 | Initial release |
-
----
-
-## Related Skills
-
-- `video-editing-skills-documentary.md` - Long-form documentary editing
-- `video-editing-skills-tutorial.md` - Educational/tutorial video editing
-- `video-editing-skills-highlight.md` - Sports/event highlight reels
 
 ---
 
