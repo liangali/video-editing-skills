@@ -122,14 +122,14 @@ flama.exe --video_dir=<video_directory> --mode=hw --prompt="<analysis_prompt>"
 **Complete Execution Command**:
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
+flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<USER_VIDEO_DIRECTORY>\output_vlm.json --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
 ```
 
 **Execution Parameters**:
 - `--video_dir`: User-provided video directory path
 - `--mode=hw`: Hardware-accelerated decoding (recommended) or `sw` for software decoding
+- `--json_file`: Output JSON file path for VLM results (should be `<USER_VIDEO_DIRECTORY>\output_vlm.json`)
 - `--prompt`: Custom prompt for video analysis
-- Default output: `output_vlm.json` in the FLAMA directory
 
 **Expected Runtime**:
 - Processing speed depends on video length, GPU capability, and number of files
@@ -143,19 +143,21 @@ flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --prompt="准确的描述
 
 **Output File Location**:
 ```
-D:\data\code\flama_code\flama\build\bin\Release\output_vlm.json
+<USER_VIDEO_DIRECTORY>\output_vlm.json
 ```
+
+The `output_vlm.json` file is saved to the user-specified video directory via the `--json_file` parameter.
 
 **Verification**:
 ```bash
 # Check if output file exists and has content
-dir "D:\data\code\flama_code\flama\build\bin\Release\output_vlm.json"
+dir "<USER_VIDEO_DIRECTORY>\output_vlm.json"
 ```
 
 **Error Handling**:
 ```
 ERROR: Video analysis failed
-- Expected output: D:\data\code\flama_code\flama\build\bin\Release\output_vlm.json
+- Expected output: <USER_VIDEO_DIRECTORY>\output_vlm.json
 - Possible causes:
   1. GPU driver issues
   2. Insufficient GPU memory
@@ -319,6 +321,13 @@ For 90-second vlog: Select ~30 segments
 
 #### 6.4 Output Storyboard JSON Format
 
+**IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` in the user's video directory (`<USER_VIDEO_DIRECTORY>\storyboard.json`). Use the Write tool to create this file after generating the complete storyboard JSON content.
+
+**Output File Location**:
+```
+<USER_VIDEO_DIRECTORY>\storyboard.json
+```
+
 **Complete Storyboard Schema**:
 
 ```json
@@ -438,12 +447,12 @@ Output: File exists
 #### 3. Execute Analysis
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
+flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --json_file=D:\data\videoclips\phone2\007_input\output_vlm.json --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
 ```
 
 #### 4. Verify Output
 ```bash
-dir "D:\data\code\flama_code\flama\build\bin\Release\output_vlm.json"
+dir "D:\data\videoclips\phone2\007_input\output_vlm.json"
 ```
 
 #### 5. Read and Analyze
@@ -455,6 +464,14 @@ Read the complete output_vlm.json file and extract:
 
 #### 6. Generate Storyboard
 Apply creative judgment to produce the final JSON storyboard.
+
+#### 7. Save Storyboard to File
+Write the complete storyboard JSON to the user's video directory:
+```bash
+# The storyboard.json file should be saved to:
+D:\data\videoclips\phone2\007_input\storyboard.json
+```
+Use the Write tool to create the `storyboard.json` file in `<USER_VIDEO_DIRECTORY>`.
 
 ---
 
@@ -469,6 +486,7 @@ Apply creative judgment to produce the final JSON storyboard.
 | "GPU initialization failed" | Driver/hardware issue | Use --mode=sw for software decode |
 | "Model not found" | VLM model missing | Check config.json model_path |
 | "output_vlm.json empty" | Processing failed | Check console for specific errors |
+| "storyboard.json not created" | Write tool failed | Verify write permissions to user directory |
 | "Insufficient segments" | Short video files | Adjust prompt or combine videos |
 
 ### Fallback Strategies
@@ -492,6 +510,8 @@ Before delivering the final storyboard, verify:
 - [ ] No duplicate segments used consecutively
 - [ ] Transitions are appropriate for content type
 - [ ] JSON is valid and well-formatted
+- [ ] `output_vlm.json` saved to `<USER_VIDEO_DIRECTORY>\output_vlm.json`
+- [ ] `storyboard.json` saved to `<USER_VIDEO_DIRECTORY>\storyboard.json`
 
 ---
 
