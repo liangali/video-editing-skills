@@ -102,7 +102,7 @@ ERROR: FLAMA tool not found
 
 **FLAMA Command Syntax**:
 ```bash
-flama.exe --input=<video_directory> --mode=hw --prompt="<analysis_prompt>"
+flama.exe --video_dir=<video_directory> --mode=hw --prompt="<analysis_prompt>"
 ```
 
 **Recommended Analysis Prompt** (Chinese, optimized for vlog content):
@@ -122,11 +122,11 @@ flama.exe --input=<video_directory> --mode=hw --prompt="<analysis_prompt>"
 **Complete Execution Command**:
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --input=<USER_VIDEO_DIRECTORY> --mode=hw --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
+flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
 ```
 
 **Execution Parameters**:
-- `--input`: User-provided video directory path
+- `--video_dir`: User-provided video directory path
 - `--mode=hw`: Hardware-accelerated decoding (recommended) or `sw` for software decoding
 - `--prompt`: Custom prompt for video analysis
 - Default output: `output_vlm.json` in the FLAMA directory
@@ -438,7 +438,7 @@ Output: File exists
 #### 3. Execute Analysis
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --input=D:\data\videoclips\phone2\007_input --mode=hw --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
+flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
 ```
 
 #### 4. Verify Output
@@ -543,7 +543,6 @@ For TikTok/Reels/Shorts format:
 flama.exe [OPTIONS]
 
 OPTIONS:
-  --input=PATH          Single video file path
   --video_dir=PATH      Directory of video files (sorted by filename)
   --mode=hw|sw          Decode mode: hw (GPU) or sw (CPU)
   --config=PATH         Custom config file path
