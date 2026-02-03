@@ -105,29 +105,26 @@ def quote_concat_path(path: Path) -> str:
 
 
 def find_default_font() -> Optional[Path]:
-    local_font = Path(__file__).with_name("font.ttf")
-    if local_font.exists():
-        try:
-            return local_font.relative_to(Path.cwd())
-        except ValueError:
-            try:
-                rel = Path(os.path.relpath(local_font, Path.cwd()))
-                if ":" not in rel.as_posix():
-                    return rel
-            except Exception:
-                pass
-            return local_font
-
-    candidates = [
-        Path("C:/Windows/Fonts/msyh.ttc"),
-        Path("C:/Windows/Fonts/msyh.ttf"),
-        Path("C:/Windows/Fonts/simhei.ttf"),
-        Path("C:/Windows/Fonts/simsun.ttc"),
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
+    script_dir = Path(__file__).resolve().parent
+    resource_font = script_dir.parent / "resource" / "font.ttf"
+    if resource_font.exists():
+        return normalize_font_path(resource_font)
     return None
+
+
+def normalize_font_path(font_path: Path) -> Path:
+    if not font_path.is_absolute():
+        return font_path
+    try:
+        return font_path.relative_to(Path.cwd())
+    except ValueError:
+        try:
+            rel = Path(os.path.relpath(font_path, Path.cwd()))
+            if ":" not in rel.as_posix():
+                return rel
+        except Exception:
+            pass
+    return font_path
 
 
 def run_cmd(cmd: List[str], dry_run: bool) -> None:
@@ -426,9 +423,13 @@ def parse_args() -> argparse.Namespace:
         help="Final output filename",
     )
     parser.add_argument(
+        "--font_file",
         "--font-file",
+        dest="font_file",
         default=None,
-        help="Font file path for subtitles (defaults to a Windows CJK font if found)",
+        help=(
+            "Font file path for subtitles (default: ../resource/font.ttf relative to this script)"
+        ),
     )
     parser.add_argument(
         "--font-size",
@@ -458,9 +459,19 @@ def main() -> int:
     output_dir = resolve_output_dir(clips, args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    font_file = Path(args.font_file) if args.font_file else find_default_font()
+    font_file = None
+    if args.font_file:
+        candidate = Path(args.font_file)
+        if candidate.exists():
+            font_file = normalize_font_path(candidate)
+        else:
+            print(f"Warning: Font file not found: {candidate}")
     if not font_file:
-        print("Warning: No font file found. Subtitles may not render correctly.")
+        font_file = find_default_font()
+
+    subtitles_enabled = font_file is not None
+    if not subtitles_enabled:
+        print("Warning: No font file found. Subtitles will be skipped.")
 
     processed_files: List[Path] = []
 
@@ -479,7 +490,7 @@ def main() -> int:
             dry_run=args.dry_run,
         )
 
-        if clip.subtitle:
+        if clip.subtitle and subtitles_enabled:
             render_subtitle(
                 ffmpeg=args.ffmpeg,
                 input_video=raw_path,
