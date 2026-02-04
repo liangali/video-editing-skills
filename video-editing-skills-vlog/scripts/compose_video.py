@@ -5,6 +5,7 @@ import random
 import re
 import subprocess
 import sys
+from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -429,9 +430,13 @@ def concat_videos(
     ffmpeg: str,
     input_videos: List[Path],
     output_video: Path,
+    temp_dir: Optional[Path],
     dry_run: bool,
 ) -> None:
-    concat_list = output_video.with_suffix(".concat.txt")
+    if temp_dir:
+        concat_list = temp_dir / f"{output_video.stem}.concat.txt"
+    else:
+        concat_list = output_video.with_suffix(".concat.txt")
     concat_list.write_text(
         "\n".join(quote_concat_path(p) for p in input_videos),
         encoding="utf-8",
@@ -565,6 +570,10 @@ def resolve_output_dir(clips: List[ClipSpec], override: Optional[str]) -> Path:
         return Path(override)
     return clips[0].source_video.parent / "output"
 
+def build_final_output_name() -> str:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"finial_video_{timestamp}.mp4"
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -587,8 +596,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-name",
-        default="storyboard_merged.mp4",
-        help="Final output filename",
+        default=None,
+        help=(
+            "Deprecated. Ignored. Final output is always named "
+            "'finial_video_YYYYMMDD_HHMMSS.mp4' in the output folder."
+        ),
     )
     parser.add_argument(
         "--font_file",
@@ -628,6 +640,14 @@ def main() -> int:
 
     output_dir = resolve_output_dir(clips, args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    temp_dir = output_dir / "temp"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.output_name:
+        print(
+            "Warning: --output-name is ignored. "
+            "Final output is always named finial_video_YYYYMMDD_HHMMSS.mp4."
+        )
 
     font_file = None
     if args.font_file:
@@ -647,8 +667,8 @@ def main() -> int:
 
     for clip in clips:
         base = f"clip_{clip.sequence_order:02d}_id{clip.clip_id}"
-        raw_path = output_dir / f"{base}_raw.mp4"
-        subtitle_path = output_dir / f"{base}_sub.mp4"
+        raw_path = temp_dir / f"{base}_raw.mp4"
+        subtitle_path = temp_dir / f"{base}_sub.mp4"
 
         print(f"\n== Processing clip {clip.sequence_order} (clip_id={clip.clip_id}) ==")
         extract_clip(
@@ -681,12 +701,13 @@ def main() -> int:
 
         processed_files.append(subtitle_path)
 
-    final_output = output_dir / args.output_name
+    final_output = output_dir / build_final_output_name()
     print(f"\n== Concatenating {len(processed_files)} clips ==")
     concat_videos(
         ffmpeg=args.ffmpeg,
         input_videos=processed_files,
         output_video=final_output,
+        temp_dir=temp_dir,
         dry_run=args.dry_run,
     )
 
@@ -694,7 +715,7 @@ def main() -> int:
     bgm_output: Optional[Path] = None
     bgm_file = find_bgm_file()
     if bgm_file:
-        bgm_output = output_dir / "storyboard_merged_bgm.mp4"
+        bgm_output = output_dir / f"{final_output.stem}_bgm.mp4"
         print(f"\n== Adding BGM: {bgm_file} ==")
         add_bgm_to_video(
             ffmpeg=args.ffmpeg,
