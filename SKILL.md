@@ -63,9 +63,27 @@ VIDEO INVENTORY:
 
 ---
 
+### Step 1.5: Extract User Editing Requirements
+
+**Objective**: Convert the user request into explicit analysis and editing constraints before deciding whether to reuse old analysis.
+
+**Actions**:
+1. Parse the user request into a `user_requirements` profile:
+   - `target_duration_seconds` (e.g., 30s, 60s)
+   - `theme` (e.g., 节日喜庆, 日常诗意, 城市探索)
+   - `mood` (e.g., 轻松活泼, 温暖治愈, 沉静克制)
+   - `pacing` (e.g., 连贯流畅, 富有动感, 慢节奏)
+   - `must_capture` (explicit content priorities if provided)
+2. Build a `current_analysis_prompt` that explicitly contains these requirements.
+3. Carry this same `user_requirements` profile forward into storyboard generation (Step 7).
+
+**Rule**: Treat explicit user requirements as hard constraints. Generic defaults are only used when the user does not specify a requirement.
+
+---
+
 ### Step 2: Check for Existing output_vlm.json
 
-**Objective**: Reuse prior analysis results when valid, otherwise prepare to run FLAMA.
+**Objective**: Reuse prior analysis only when both data structure and analysis intent are compatible with current user requirements.
 
 **Actions**:
 1. Check if `<USER_VIDEO_DIRECTORY>\output_vlm.json` exists
@@ -74,10 +92,26 @@ VIDEO INVENTORY:
    - It has a top-level `processed_videos` array
    - Each entry includes `input_video` and `segments`
    - Each segment has `seg_start`, `seg_end`, and `seg_desc`
-3. If validation passes, **skip running flama.exe** and reuse `output_vlm.json`
-4. If validation fails or file is missing, proceed to Step 3 and run flama.exe to regenerate `output_vlm.json`
+3. Read `prompt` from each `processed_videos[*].prompt` (or the first non-empty prompt if consistent).
+4. Compare existing `prompt` with `current_analysis_prompt` and `user_requirements`:
+   - Theme/mood keywords overlap (e.g., “节日喜庆”, “诗意”, “动感”)
+   - Focus dimensions overlap (e.g., atmosphere, rhythm, continuity, emotional moments)
+   - No direct conflict with current requirements
+5. Reuse `output_vlm.json` **only if** structure is valid **and** prompt compatibility is high.
+6. If structure is invalid, prompt is missing, or prompt is not compatible, rerun FLAMA in Step 4 to regenerate analysis with a new prompt.
 
-**Validation Note**: If `output_vlm.json` is empty, malformed, or missing required fields, treat it as invalid and rerun analysis.
+**Validation Note**: Do not reuse `output_vlm.json` based only on file existence. Prompt compatibility is mandatory.
+
+**Decision Output**:
+```
+VLM REUSE DECISION:
+- Existing output_vlm.json: [found/not found]
+- JSON structure: [valid/invalid]
+- Existing prompt: [text]
+- Current prompt: [text]
+- Prompt compatibility: [high/medium/low]
+- Action: [reuse existing analysis | rerun FLAMA]
+```
 
 ---
 
@@ -123,10 +157,26 @@ ERROR: FLAMA tool not found
 flama.exe --video_dir=<video_directory> --mode=hw --prompt="<analysis_prompt>"
 ```
 
-**Recommended Analysis Prompt** (Chinese, optimized for vlog content):
+**Prompt Construction Rule (Required)**:
+Always generate a task-specific prompt from `user_requirements`. The prompt must reflect user-stated theme, mood, pacing, and focus.
+
+**Base Prompt Template**:
+```
+请根据以下剪辑目标分析视频片段：主题是「<THEME>」，氛围是「<MOOD>」，节奏要求「<PACING>」。重点捕捉与「<MUST_CAPTURE>」相关的画面线索。描述中必须包含：场景环境、人物动作、画面构图、光线氛围、运镜方式，并突出与目标风格相关的信息。输出不超过100字。
+```
+
+**Default Prompt** (only when user gives no special style requirement):
 ```
 准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。
 ```
+
+**Examples of Requirement-Driven Prompts**:
+
+| User Requirement | Suggested Prompt |
+|------------------|------------------|
+| 节日喜庆氛围，轻松活泼 | `请重点识别节日元素、欢庆互动、热闹场景和轻快节奏的镜头，描述场景环境、人物动作、构图、光线与运镜，突出喜庆与活力。输出不超过100字。` |
+| 捕捉日常生活中诗意瞬间 | `请重点识别日常场景中的诗意细节、情绪留白、光影变化与细腻动作，描述环境、人物、构图、光线和运镜，突出温柔与故事感。输出不超过100字。` |
+| 连贯流畅，富有动感 | `请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点，描述环境、动作、构图、光线和运镜，突出流畅衔接与动感。输出不超过100字。` |
 
 **Alternative Prompts by Vlog Type**:
 
@@ -140,7 +190,7 @@ flama.exe --video_dir=<video_directory> --mode=hw --prompt="<analysis_prompt>"
 **Complete Execution Command**:
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<USER_VIDEO_DIRECTORY>\output_vlm.json --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
+flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<USER_VIDEO_DIRECTORY>\output_vlm.json --prompt="<CURRENT_ANALYSIS_PROMPT_FROM_USER_REQUIREMENTS>"
 ```
 
 **Execution Parameters**:
@@ -253,15 +303,19 @@ When reading output_vlm.json, extract and categorize the following:
 
 ### Step 7: Generate Vlog Storyboard
 
-**Objective**: Create a professional vlog editing storyboard based on video analysis.
+**Objective**: Create a professional vlog editing storyboard based on video analysis and explicitly satisfy user editing requirements.
+
+**Hard Constraint**:
+- Prioritize `user_requirements` (theme, mood, pacing, must-capture) over generic template preferences.
+- If conflict exists, follow user requirements.
 
 This is the creative core of the skill. Follow these sub-steps carefully:
 
-#### 6.1 Story Outline Development
+#### 7.1 Story Outline Development
 
 **Process**:
 1. Review all segment descriptions to understand available footage
-2. Identify a coherent narrative theme that emerges from the content
+2. Map footage to `user_requirements` first, then define narrative theme and emotional line
 3. Structure the story with classic narrative arc:
    - **Opening Hook** (5-10%): Visually striking moment to capture attention
    - **Introduction** (10-15%): Establish context, location, or subject
@@ -280,7 +334,7 @@ This is the creative core of the skill. Follow these sub-steps carefully:
 | Tutorial | Hook → Problem → Process → Result |
 | Montage | Theme Introduction → Variations → Crescendo → Resolution |
 
-#### 6.2 Segment Selection and Sequencing
+#### 7.2 Segment Selection and Sequencing
 
 **Selection Criteria**:
 
@@ -291,6 +345,7 @@ This is the creative core of the skill. Follow these sub-steps carefully:
 5. **Continuity**: Ensure logical visual flow between segments
 6. **Duration Fit**: Select segments to meet target duration constraint
 7. **No Duplicates**: Never reuse the same source segment. A `(source_video, source_segment_id)` pair must appear at most once in `clips`.
+8. **Requirement Fit**: Each selected segment should support at least one explicit user requirement (theme/mood/pacing/must-capture).
 
 **Sequencing Rules**:
 
@@ -313,7 +368,7 @@ For 60-second vlog: Select ~20 segments
 For 90-second vlog: Select ~30 segments
 ```
 
-#### 6.3 Voiceover/Caption Generation
+#### 7.3 Voiceover/Caption Generation
 
 **Guidelines**:
 
@@ -322,6 +377,7 @@ For 90-second vlog: Select ~30 segments
 3. **Style**: Conversational, engaging, not overly descriptive
 4. **Function**: Complement visuals, don't merely describe them
 5. **Rhythm**: Vary sentence length for natural flow
+6. **Requirement Alignment**: Word choice should reinforce user-specified style (e.g., 喜庆、诗意、动感).
 
 **Voiceover Types**:
 
@@ -339,7 +395,7 @@ For 90-second vlog: Select ~30 segments
 - 情感真挚，不矫揉造作
 - 主题升华，点睛之笔
 
-#### 6.4 Output Storyboard JSON Format
+#### 7.4 Output Storyboard JSON Format
 
 **IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` in the user's video directory (`<USER_VIDEO_DIRECTORY>\storyboard.json`). **Even if a storyboard.json already exists, always regenerate a new storyboard and overwrite it. Do not reuse existing storyboard.json.** Use the Write tool to create this file after generating the complete storyboard JSON content.
 
@@ -361,7 +417,14 @@ For 90-second vlog: Select ~30 segments
     "source_videos_count": 5,
     "vlog_type": "travel",
     "theme": "山间晨光之旅",
-    "mood": "peaceful, inspiring"
+    "mood": "peaceful, inspiring",
+    "analysis_prompt_used": "最终用于FLAMA分析的提示词",
+    "user_requirements": {
+      "theme": "用户指定主题",
+      "mood": "用户指定氛围",
+      "pacing": "用户指定节奏",
+      "must_capture": ["用户强调的关键元素"]
+    }
   },
 
   "story_outline": {
@@ -497,7 +560,7 @@ storyboard_merged.mp4
 ### User Request
 ```
 这是 D:\data\videoclips\phone2\007_input 本地文件夹中包含了多个视频文件，
-帮我生成一个简单30秒时长的vlog视频剪辑脚本，使用json格式输出
+帮我生成一个30秒时长的vlog视频剪辑脚本，要求连贯流畅、富有动感，使用json格式输出
 ```
 
 ### Step-by-Step Execution
@@ -508,34 +571,40 @@ dir "D:\data\videoclips\phone2\007_input\*.mp4"
 ```
 Output: List of video files found
 
-#### 2. Verify FLAMA
+#### 2. Check Existing output_vlm.json Prompt Compatibility
+Check:
+- JSON structure is valid
+- Existing `prompt` matches current requirement ("连贯流畅、富有动感")
+- Reuse only if compatible; otherwise rerun FLAMA
+
+#### 3. Verify FLAMA (if reuse is rejected)
 ```bash
 dir "D:\data\code\flama_code\flama\build\bin\Release\flama.exe"
 ```
 Output: File exists
 
-#### 3. Execute Analysis
+#### 4. Execute Analysis (if reuse is rejected)
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --json_file=D:\data\videoclips\phone2\007_input\output_vlm.json --prompt="准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
+flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --json_file=D:\data\videoclips\phone2\007_input\output_vlm.json --prompt="请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点，描述环境、动作、构图、光线和运镜，突出流畅衔接与动感。输出不超过100字。"
 ```
 
-#### 4. Verify Output
+#### 5. Verify Output
 ```bash
 dir "D:\data\videoclips\phone2\007_input\output_vlm.json"
 ```
 
-#### 5. Read and Analyze
+#### 6. Read and Analyze
 Read the complete output_vlm.json file and extract:
 - Total number of source videos
 - Total available segments
 - Scene variety and themes
 - Potential highlight moments
 
-#### 6. Generate Storyboard
+#### 7. Generate Storyboard
 Apply creative judgment to produce the final JSON storyboard.
 
-#### 7. Save Storyboard to File
+#### 8. Save Storyboard to File
 Write the complete storyboard JSON to the user's video directory:
 ```bash
 # The storyboard.json file should be saved to:
@@ -543,7 +612,7 @@ D:\data\videoclips\phone2\007_input\storyboard.json
 ```
 Use the Write tool to create the `storyboard.json` file in `<USER_VIDEO_DIRECTORY>`. **Always overwrite existing storyboard.json; never reuse it.**
 
-#### 8. Compose Final Video
+#### 9. Compose Final Video
 Run the compose script to generate the final video:
 ```bash
 cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
@@ -590,6 +659,9 @@ Before delivering the final storyboard, verify:
 - [ ] Voiceover text is grammatically correct and engaging
 - [ ] No duplicate segments used consecutively
 - [ ] Transitions are appropriate for content type
+- [ ] FLAMA prompt explicitly reflects current user requirements
+- [ ] Existing `output_vlm.json` prompt compatibility was checked before reuse
+- [ ] Storyboard theme/mood/pacing clearly matches user request keywords
 - [ ] JSON is valid and well-formatted
 - [ ] `output_vlm.json` saved to `<USER_VIDEO_DIRECTORY>\output_vlm.json`
 - [ ] `storyboard.json` saved to `<USER_VIDEO_DIRECTORY>\storyboard.json`
