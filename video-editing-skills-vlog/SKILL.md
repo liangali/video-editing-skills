@@ -422,6 +422,45 @@ For 90-second vlog: Select ~30 segments
 
 ---
 
+### Step 7: Compose Final Video with FFmpeg
+
+**Objective**: Use the generated `storyboard.json` to automatically cut clips, overlay subtitles, and concatenate the final video.
+
+**Tool**: `compose_video.py` located in:
+```
+D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py
+```
+
+**Required Inputs**:
+- `--storyboard`: Full path to `storyboard.json`
+- `--ffmpeg`: Path to ffmpeg executable. Use a relative path from `scripts\compose_video.py`:
+  - `..\bin\ffmpeg.exe`
+
+**Optional Inputs**:
+- `--font_file`: Path to subtitle font. Use a relative path from `scripts\compose_video.py`:
+  - `..\resource\font.ttf`
+- If `--font_file` is not provided and no default font is found, subtitle overlay will be skipped.
+- `--output-dir`: Output folder (default: `<SOURCE_VIDEO_FOLDER>\output`)
+- `--output-name`: Final output filename (default: `storyboard_merged.mp4`)
+
+**Command Example** (run from `scripts` folder):
+```bash
+cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
+python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json --ffmpeg ..\bin\ffmpeg.exe --font_file ..\resource\font.ttf
+```
+
+**Expected Output**:
+- Intermediate clip files and the final merged video are written to:
+```
+<SOURCE_VIDEO_FOLDER>\output
+```
+- Final merged file default name:
+```
+storyboard_merged.mp4
+```
+
+---
+
 ## Complete Example Workflow
 
 ### User Request
@@ -472,6 +511,17 @@ Write the complete storyboard JSON to the user's video directory:
 D:\data\videoclips\phone2\007_input\storyboard.json
 ```
 Use the Write tool to create the `storyboard.json` file in `<USER_VIDEO_DIRECTORY>`.
+
+#### 8. Compose Final Video
+Run the compose script to generate the final video:
+```bash
+cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
+python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json --ffmpeg ..\bin\ffmpeg.exe --font_file ..\resource\font.ttf
+```
+Output will be saved to:
+```
+D:\data\videoclips\phone2\007_input\output\storyboard_merged.mp4
+```
 
 ---
 
