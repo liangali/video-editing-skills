@@ -451,19 +451,30 @@ For 90-second vlog: Select ~30 segments
 D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py
 ```
 
-**Required Inputs**:
-- `--storyboard`: Full path to `storyboard.json`
-- `--ffmpeg`: Path to ffmpeg executable. Use a relative path from `scripts\compose_video.py`:
-  - `..\bin\ffmpeg.exe`
+**Critical Requirement (Strict Execution)**:
+- The cloud LLM **must** run the compose step **exactly** with the command shown below.
+- **Do not** alter or invent any arguments.
+- **Do not** pass `--output-name` or `--output-dir`.
+- **Do not** change the output naming convention defined in `compose_video.py`. The final file naming must remain exactly as implemented there.
 
-**Optional Inputs**:
+**Strict Command (Must Use As-Is)**:
+```bash
+cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
+python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json
+```
+
+**Inputs (Reference Only; Do Not Override in Cloud LLM)**:
+- `--storyboard`: Full path to `storyboard.json`
+- `--ffmpeg`: Path to ffmpeg executable. If omitted, `compose_video.py` uses `..\bin\ffmpeg.exe` when present, otherwise `ffmpeg` in PATH.
+
+**Optional Inputs** (Manual Local Use Only; cloud LLM must not use):
 - `--font_file`: Path to subtitle font. Use a relative path from `scripts\compose_video.py`:
   - `..\resource\font.ttf`
 - If `--font_file` is not provided and no default font is found, subtitle overlay will be skipped.
 - `--output-dir`: Output folder (default: `<SOURCE_VIDEO_FOLDER>\output`)
 - `--output-name`: Final output filename (default: `storyboard_merged.mp4`)
 
-**Command Example** (run from `scripts` folder):
+**Command Example** (Local Override Only; do not use in cloud LLM):
 ```bash
 cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
 python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json --ffmpeg ..\bin\ffmpeg.exe --font_file ..\resource\font.ttf
@@ -536,7 +547,7 @@ Use the Write tool to create the `storyboard.json` file in `<USER_VIDEO_DIRECTOR
 Run the compose script to generate the final video:
 ```bash
 cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
-python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json --ffmpeg ..\bin\ffmpeg.exe --font_file ..\resource\font.ttf
+python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json
 ```
 Output will be saved to:
 ```
