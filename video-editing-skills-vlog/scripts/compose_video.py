@@ -1,6 +1,8 @@
 import argparse
 import json
 import os
+import random
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -166,6 +168,153 @@ def extract_clip(
     ]
     run_cmd(cmd, dry_run=dry_run)
 
+
+def resolve_ffprobe(ffmpeg: str) -> str:
+    ffmpeg_path = Path(ffmpeg)
+    if ffmpeg_path.exists():
+        candidate = ffmpeg_path.with_name("ffprobe.exe")
+        if candidate.exists():
+            return str(candidate)
+    return "ffprobe"
+
+
+def parse_duration_from_ffmpeg_output(output: str) -> Optional[float]:
+    match = re.search(r"Duration:\s*(\d+):(\d+):(\d+\.\d+)", output)
+    if not match:
+        return None
+    hours = int(match.group(1))
+    minutes = int(match.group(2))
+    seconds = float(match.group(3))
+    return hours * 3600 + minutes * 60 + seconds
+
+
+def get_media_duration(
+    ffprobe: str,
+    ffmpeg: str,
+    media_path: Path,
+) -> Optional[float]:
+    cmd = [
+        ffprobe,
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=nw=1:nk=1",
+        str(media_path),
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            return float(result.stdout.strip())
+    except Exception:
+        pass
+
+    cmd = [ffmpeg, "-i", str(media_path)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return parse_duration_from_ffmpeg_output(result.stderr or result.stdout)
+
+
+def has_audio_stream(
+    ffprobe: str,
+    ffmpeg: str,
+    media_path: Path,
+) -> bool:
+    cmd = [
+        ffprobe,
+        "-v",
+        "error",
+        "-select_streams",
+        "a",
+        "-show_entries",
+        "stream=index",
+        "-of",
+        "csv=p=0",
+        str(media_path),
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return bool(result.stdout.strip())
+    except Exception:
+        pass
+
+    cmd = [ffmpeg, "-i", str(media_path)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    text = (result.stderr or "") + (result.stdout or "")
+    return "Audio:" in text
+
+
+def find_bgm_file() -> Optional[Path]:
+    script_dir = Path(__file__).resolve().parent
+    bgm_dir = script_dir.parent / "resource" / "bgm"
+    if not bgm_dir.exists():
+        return None
+    candidates = list(bgm_dir.glob("*.mp3")) + list(bgm_dir.glob("*.MP3"))
+    if not candidates:
+        return None
+    return random.choice(candidates)
+
+
+def add_bgm_to_video(
+    ffmpeg: str,
+    ffprobe: str,
+    input_video: Path,
+    output_video: Path,
+    bgm_file: Path,
+    dry_run: bool,
+    fade_in: float = 1.0,
+    fade_out: float = 1.5,
+) -> None:
+    duration = get_media_duration(ffprobe, ffmpeg, input_video)
+    if not duration:
+        print("Warning: Unable to determine video duration. Skipping BGM.")
+        return
+
+    fade_out_start = max(0.0, duration - fade_out)
+    bgm_filter = (
+        f"afade=t=in:st=0:d={fade_in},"
+        f"afade=t=out:st={fade_out_start}:d={fade_out}"
+    )
+
+    if has_audio_stream(ffprobe, ffmpeg, input_video):
+        filter_complex = (
+            f"[1:a]{bgm_filter}[bgm];"
+            f"[0:a][bgm]amix=inputs=2:duration=first:dropout_transition=2[a]"
+        )
+        map_audio = ["-map", "[a]"]
+    else:
+        filter_complex = f"[1:a]{bgm_filter}[a]"
+        map_audio = ["-map", "[a]"]
+
+    cmd = [
+        ffmpeg,
+        "-y",
+        "-i",
+        str(input_video),
+        "-stream_loop",
+        "-1",
+        "-i",
+        str(bgm_file),
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "0:v:0",
+        *map_audio,
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-shortest",
+        str(output_video),
+    ]
+    run_cmd(cmd, dry_run=dry_run)
 
 def render_subtitle(
     ffmpeg: str,
@@ -520,7 +669,26 @@ def main() -> int:
         dry_run=args.dry_run,
     )
 
+    ffprobe = resolve_ffprobe(args.ffmpeg)
+    bgm_output: Optional[Path] = None
+    bgm_file = find_bgm_file()
+    if bgm_file:
+        bgm_output = output_dir / "storyboard_merged_bgm.mp4"
+        print(f"\n== Adding BGM: {bgm_file} ==")
+        add_bgm_to_video(
+            ffmpeg=args.ffmpeg,
+            ffprobe=ffprobe,
+            input_video=final_output,
+            output_video=bgm_output,
+            bgm_file=bgm_file,
+            dry_run=args.dry_run,
+        )
+    else:
+        print("\nWarning: No BGM mp3 found. Skipping BGM overlay.")
+
     print(f"\nDone. Output: {final_output}")
+    if bgm_output:
+        print(f"Done. Output with BGM: {bgm_output}")
     return 0
 
 
