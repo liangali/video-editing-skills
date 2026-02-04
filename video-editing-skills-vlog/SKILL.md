@@ -1,6 +1,6 @@
 ---
 name: video-editing-skills-vlog
-description: "Vlog video editing storyboard generator using local FLAMA tool for AI-powered video analysis. Use this skill when: (1) User provides a folder containing video files and asks to create a vlog editing script/storyboard, (2) User requests video clip analysis and selection for vlog creation, (3) User wants to generate a JSON-format video editing plan with specified duration (e.g., 30 seconds, 60 seconds), (4) User mentions keywords like 'vlog剪辑', '视频剪辑脚本', 'video storyboard', or 'editing script'. This skill invokes the local flama.exe tool to analyze video segments using VLM, then generates professional storyboards with narrative structure, clip selection, voiceover suggestions, and timing information."
+description: "Vlog video editing workflow using local FLAMA for AI-powered video analysis, storyboard generation, and optional final video composition via compose_video.py. Use this skill when: (1) User provides a folder containing video files and asks to create a vlog editing script/storyboard, (2) User requests video clip analysis and selection for vlog creation, (3) User wants to generate a JSON-format video editing plan with specified duration (e.g., 30 seconds, 60 seconds), (4) User mentions keywords like 'vlog剪辑', '视频剪辑脚本', 'video storyboard', or 'editing script', (5) User wants to automatically render a final video from storyboard.json. This skill invokes the local flama.exe tool to analyze video segments using VLM, then generates professional storyboards with narrative structure, clip selection, voiceover suggestions, and timing information, and can call compose_video.py to render the final video."
 ---
 
 # Vlog Storyboard Generator
@@ -63,7 +63,25 @@ VIDEO INVENTORY:
 
 ---
 
-### Step 2: Verify FLAMA Tool Availability
+### Step 2: Check for Existing output_vlm.json
+
+**Objective**: Reuse prior analysis results when valid, otherwise prepare to run FLAMA.
+
+**Actions**:
+1. Check if `<USER_VIDEO_DIRECTORY>\output_vlm.json` exists
+2. If it exists, validate that:
+   - The file is valid JSON
+   - It has a top-level `processed_videos` array
+   - Each entry includes `input_video` and `segments`
+   - Each segment has `seg_start`, `seg_end`, and `seg_desc`
+3. If validation passes, **skip running flama.exe** and reuse `output_vlm.json`
+4. If validation fails or file is missing, proceed to Step 3 and run flama.exe to regenerate `output_vlm.json`
+
+**Validation Note**: If `output_vlm.json` is empty, malformed, or missing required fields, treat it as invalid and rerun analysis.
+
+---
+
+### Step 3: Verify FLAMA Tool Availability
 
 **Objective**: Ensure the FLAMA video analysis tool is properly installed and accessible.
 
@@ -96,7 +114,7 @@ ERROR: FLAMA tool not found
 
 ---
 
-### Step 3: Execute FLAMA Video Analysis
+### Step 4: Execute FLAMA Video Analysis
 
 **Objective**: Run FLAMA to analyze all video files and generate segment descriptions.
 
@@ -137,7 +155,7 @@ flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<USER_VIDEO_D
 
 ---
 
-### Step 4: Verify Analysis Output
+### Step 5: Verify Analysis Output
 
 **Objective**: Confirm successful generation of video analysis results.
 
@@ -168,7 +186,7 @@ ERROR: Video analysis failed
 
 ---
 
-### Step 5: Parse and Understand Video Content
+### Step 6: Parse and Understand Video Content
 
 **Objective**: Read and comprehensively analyze the output_vlm.json file.
 
@@ -233,7 +251,7 @@ When reading output_vlm.json, extract and categorize the following:
 
 ---
 
-### Step 6: Generate Vlog Storyboard
+### Step 7: Generate Vlog Storyboard
 
 **Objective**: Create a professional vlog editing storyboard based on video analysis.
 
@@ -272,6 +290,7 @@ This is the creative core of the skill. Follow these sub-steps carefully:
 4. **Pacing**: Alternate between dynamic and calm segments
 5. **Continuity**: Ensure logical visual flow between segments
 6. **Duration Fit**: Select segments to meet target duration constraint
+7. **No Duplicates**: Never reuse the same source segment. A `(source_video, source_segment_id)` pair must appear at most once in `clips`.
 
 **Sequencing Rules**:
 
@@ -280,6 +299,7 @@ This is the creative core of the skill. Follow these sub-steps carefully:
 - **Use** transition-friendly segments at cut points
 - **Build** visual momentum toward climax
 - **End** with a memorable, complete moment
+- **Do Not Repeat Segments**: If a segment is already used, choose a different segment even if it looks similar.
 
 **Duration Calculation**:
 
@@ -321,7 +341,7 @@ For 90-second vlog: Select ~30 segments
 
 #### 6.4 Output Storyboard JSON Format
 
-**IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` in the user's video directory (`<USER_VIDEO_DIRECTORY>\storyboard.json`). Use the Write tool to create this file after generating the complete storyboard JSON content.
+**IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` in the user's video directory (`<USER_VIDEO_DIRECTORY>\storyboard.json`). **Even if a storyboard.json already exists, always regenerate a new storyboard and overwrite it. Do not reuse existing storyboard.json.** Use the Write tool to create this file after generating the complete storyboard JSON content.
 
 **Output File Location**:
 ```
@@ -422,7 +442,7 @@ For 90-second vlog: Select ~30 segments
 
 ---
 
-### Step 7: Compose Final Video with FFmpeg
+### Step 8: Compose Final Video with FFmpeg
 
 **Objective**: Use the generated `storyboard.json` to automatically cut clips, overlay subtitles, and concatenate the final video.
 
@@ -510,7 +530,7 @@ Write the complete storyboard JSON to the user's video directory:
 # The storyboard.json file should be saved to:
 D:\data\videoclips\phone2\007_input\storyboard.json
 ```
-Use the Write tool to create the `storyboard.json` file in `<USER_VIDEO_DIRECTORY>`.
+Use the Write tool to create the `storyboard.json` file in `<USER_VIDEO_DIRECTORY>`. **Always overwrite existing storyboard.json; never reuse it.**
 
 #### 8. Compose Final Video
 Run the compose script to generate the final video:
