@@ -110,23 +110,23 @@ def find_default_font() -> Optional[Path]:
     script_dir = Path(__file__).resolve().parent
     resource_font = script_dir.parent / "resource" / "font.ttf"
     if resource_font.exists():
-        return normalize_font_path(resource_font)
+        return normalize_filter_path(resource_font)
     return None
 
 
-def normalize_font_path(font_path: Path) -> Path:
-    if not font_path.is_absolute():
-        return font_path
+def normalize_filter_path(path: Path) -> Path:
+    if not path.is_absolute():
+        return path
     try:
-        return font_path.relative_to(Path.cwd())
+        return path.relative_to(Path.cwd())
     except ValueError:
         try:
-            rel = Path(os.path.relpath(font_path, Path.cwd()))
+            rel = Path(os.path.relpath(path, Path.cwd()))
             if ":" not in rel.as_posix():
                 return rel
         except Exception:
             pass
-    return font_path
+    return path
 
 
 def run_cmd(cmd: List[str], dry_run: bool) -> None:
@@ -167,6 +167,14 @@ def extract_clip(
         str(output_path),
     ]
     run_cmd(cmd, dry_run=dry_run)
+
+
+def find_default_ffmpeg() -> str:
+    script_dir = Path(__file__).resolve().parent
+    candidate = script_dir.parent / "bin" / "ffmpeg.exe"
+    if candidate.exists():
+        return str(candidate)
+    return "ffmpeg"
 
 
 def resolve_ffprobe(ffmpeg: str) -> str:
@@ -333,7 +341,18 @@ def render_subtitle(
     if font_file:
         font_value = escape_drawtext_path(str(font_file))
         filter_parts.append(f"fontfile={font_value}")
-    filter_parts.append(f"text='{escaped_text}'")
+
+    subtitle_file = output_video.with_suffix(".txt")
+    subtitle_file.write_text(subtitle_text, encoding="utf-8")
+    subtitle_path = normalize_filter_path(subtitle_file)
+
+    use_textfile = ":" not in subtitle_path.as_posix()
+    if use_textfile:
+        textfile_value = escape_drawtext_path(str(subtitle_path))
+        filter_parts.append(f"textfile={textfile_value}")
+    else:
+        filter_parts.append(f"text='{escaped_text}'")
+
     filter_parts.extend(
         [
             "x=(w-text_w)/2",
@@ -558,8 +577,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ffmpeg",
-        default="ffmpeg",
-        help="Path to ffmpeg.exe (default: ffmpeg in PATH)",
+        default=None,
+        help="Path to ffmpeg.exe (default: ../bin/ffmpeg.exe if present, else ffmpeg in PATH)",
     )
     parser.add_argument(
         "--output-dir",
@@ -602,6 +621,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if not args.ffmpeg:
+        args.ffmpeg = find_default_ffmpeg()
     storyboard_path = Path(args.storyboard)
     clips = load_storyboard(storyboard_path)
 
@@ -612,7 +633,7 @@ def main() -> int:
     if args.font_file:
         candidate = Path(args.font_file)
         if candidate.exists():
-            font_file = normalize_font_path(candidate)
+            font_file = normalize_filter_path(candidate)
         else:
             print(f"Warning: Font file not found: {candidate}")
     if not font_file:
