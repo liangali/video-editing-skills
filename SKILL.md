@@ -63,9 +63,46 @@ VIDEO INVENTORY:
 
 ---
 
-### Step 1.5: Extract User Editing Requirements
+### Step 1.1: Create Editing Workspace
 
-**Objective**: Convert the user request into explicit analysis and editing constraints before deciding whether to reuse old analysis.
+**Objective**: Create a per-edit workspace folder inside the user’s video directory.
+
+**Actions**:
+1. Generate a timestamp string in local time: `YYYYMMDD_HHMMSS`
+2. Create a folder named `editing_<TIMESTAMP>` inside the user’s video directory
+3. Define this folder as `WORKSPACE_DIR` and use it for **all** subsequent outputs
+
+**Naming Rule**:
+```
+<USER_VIDEO_DIRECTORY>\editing_YYYYMMDD_HHMMSS
+```
+
+**Examples**:
+```
+D:\data\videoclips\phone2\test1\editing_20230205_190123
+```
+
+**Hard Requirement**:
+- All files generated in this edit (analysis, storyboard, temp files, final output) **must** be inside `WORKSPACE_DIR`.
+
+---
+
+### Step 1.2: Save User Input
+
+**Objective**: Persist the original user instruction for traceability.
+
+**Actions**:
+1. Write the full user request text to:
+```
+<WORKSPACE_DIR>\user_input.txt
+```
+2. Preserve the text exactly as given (no rewriting).
+
+---
+
+### Step 2: Extract User Editing Requirements
+
+**Objective**: Convert the user request into explicit analysis and editing constraints that drive FLAMA prompting and storyboard decisions.
 
 **Actions**:
 1. Parse the user request into a `user_requirements` profile:
@@ -78,40 +115,6 @@ VIDEO INVENTORY:
 3. Carry this same `user_requirements` profile forward into storyboard generation (Step 7).
 
 **Rule**: Treat explicit user requirements as hard constraints. Generic defaults are only used when the user does not specify a requirement.
-
----
-
-### Step 2: Check for Existing output_vlm.json
-
-**Objective**: Reuse prior analysis only when both data structure and analysis intent are compatible with current user requirements.
-
-**Actions**:
-1. Check if `<USER_VIDEO_DIRECTORY>\output_vlm.json` exists
-2. If it exists, validate that:
-   - The file is valid JSON
-   - It has a top-level `processed_videos` array
-   - Each entry includes `input_video` and `segments`
-   - Each segment has `seg_start`, `seg_end`, and `seg_desc`
-3. Read `prompt` from each `processed_videos[*].prompt` (or the first non-empty prompt if consistent).
-4. Compare existing `prompt` with `current_analysis_prompt` and `user_requirements`:
-   - Theme/mood keywords overlap (e.g., “节日喜庆”, “诗意”, “动感”)
-   - Focus dimensions overlap (e.g., atmosphere, rhythm, continuity, emotional moments)
-   - No direct conflict with current requirements
-5. Reuse `output_vlm.json` **only if** structure is valid **and** prompt compatibility is high.
-6. If structure is invalid, prompt is missing, or prompt is not compatible, rerun FLAMA in Step 4 to regenerate analysis with a new prompt.
-
-**Validation Note**: Do not reuse `output_vlm.json` based only on file existence. Prompt compatibility is mandatory.
-
-**Decision Output**:
-```
-VLM REUSE DECISION:
-- Existing output_vlm.json: [found/not found]
-- JSON structure: [valid/invalid]
-- Existing prompt: [text]
-- Current prompt: [text]
-- Prompt compatibility: [high/medium/low]
-- Action: [reuse existing analysis | rerun FLAMA]
-```
 
 ---
 
@@ -152,6 +155,9 @@ ERROR: FLAMA tool not found
 
 **Objective**: Run FLAMA to analyze all video files and generate segment descriptions.
 
+**Hard Requirement**:
+- Always run FLAMA for each edit. Do **not** reuse or inspect any previous `output_vlm.json`.
+
 **FLAMA Command Syntax**:
 ```bash
 flama.exe --video_dir=<video_directory> --mode=hw --prompt="<analysis_prompt>"
@@ -190,13 +196,13 @@ Always generate a task-specific prompt from `user_requirements`. The prompt must
 **Complete Execution Command**:
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<USER_VIDEO_DIRECTORY>\output_vlm.json --prompt="<CURRENT_ANALYSIS_PROMPT_FROM_USER_REQUIREMENTS>"
+flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<WORKSPACE_DIR>\output_vlm.json --prompt="<CURRENT_ANALYSIS_PROMPT_FROM_USER_REQUIREMENTS>"
 ```
 
 **Execution Parameters**:
 - `--video_dir`: User-provided video directory path
 - `--mode=hw`: Hardware-accelerated decoding (recommended) or `sw` for software decoding
-- `--json_file`: Output JSON file path for VLM results (should be `<USER_VIDEO_DIRECTORY>\output_vlm.json`)
+- `--json_file`: Output JSON file path for VLM results (should be `<WORKSPACE_DIR>\output_vlm.json`)
 - `--prompt`: Custom prompt for video analysis
 
 **Expected Runtime**:
@@ -211,21 +217,21 @@ flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<USER_VIDEO_D
 
 **Output File Location**:
 ```
-<USER_VIDEO_DIRECTORY>\output_vlm.json
+<WORKSPACE_DIR>\output_vlm.json
 ```
 
-The `output_vlm.json` file is saved to the user-specified video directory via the `--json_file` parameter.
+The `output_vlm.json` file is saved to the edit workspace via the `--json_file` parameter.
 
 **Verification**:
 ```bash
 # Check if output file exists and has content
-dir "<USER_VIDEO_DIRECTORY>\output_vlm.json"
+dir "<WORKSPACE_DIR>\output_vlm.json"
 ```
 
 **Error Handling**:
 ```
 ERROR: Video analysis failed
-- Expected output: <USER_VIDEO_DIRECTORY>\output_vlm.json
+- Expected output: <WORKSPACE_DIR>\output_vlm.json
 - Possible causes:
   1. GPU driver issues
   2. Insufficient GPU memory
@@ -443,11 +449,11 @@ For 90-second vlog: Select ~30 segments
 
 #### 7.5 Output Storyboard JSON Format
 
-**IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` in the user's video directory (`<USER_VIDEO_DIRECTORY>\storyboard.json`). **Even if a storyboard.json already exists, always regenerate a new storyboard and overwrite it. Do not reuse existing storyboard.json.** Use the Write tool to create this file after generating the complete storyboard JSON content.
+**IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` inside the edit workspace (`<WORKSPACE_DIR>\storyboard.json`). **Even if a storyboard.json already exists, always regenerate a new storyboard and overwrite it. Do not reuse existing storyboard.json.** Use the Write tool to create this file after generating the complete storyboard JSON content.
 
 **Output File Location**:
 ```
-<USER_VIDEO_DIRECTORY>\storyboard.json
+<WORKSPACE_DIR>\storyboard.json
 ```
 
 **Complete Storyboard Schema**:
@@ -464,6 +470,7 @@ For 90-second vlog: Select ~30 segments
     "vlog_type": "travel",
     "theme": "山间晨光之旅",
     "mood": "peaceful, inspiring",
+    "cloud_llm_name": "CloudLLM",
     "analysis_prompt_used": "最终用于FLAMA分析的提示词",
     "user_requirements": {
       "theme": "用户指定主题",
@@ -552,6 +559,11 @@ For 90-second vlog: Select ~30 segments
 }
 ```
 
+**Required Metadata for Output Naming**:
+- `storyboard_metadata.theme`
+- `storyboard_metadata.target_duration_seconds`
+- `storyboard_metadata.cloud_llm_name`
+
 ---
 
 ### Step 8: Compose Final Video with FFmpeg
@@ -568,6 +580,23 @@ D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\c
 - If the specified file does not exist, the script will fall back to a random BGM in `resource\bgm`.
 - Therefore, the storyboard **must** contain a valid absolute path to the chosen BGM file.
 
+**Workspace Output Organization (Required)**:
+- Temp folder for intermediates: `<WORKSPACE_DIR>\temp`
+- All intermediate video files (including the non‑BGM merged file) must be saved in `temp`.
+- Final output (with BGM) must be saved in the root of `WORKSPACE_DIR`.
+
+**Final Output Naming Rule (Required)**:
+```
+<VIDEO_THEME>_<DURATION>_bgm_<CLOUD_LLM_NAME>.mp4
+```
+Where:
+- `<VIDEO_THEME>` comes from `storyboard_metadata.theme`
+- `<DURATION>` is `target_duration_seconds` rounded to seconds (e.g., `30s`)
+- `<CLOUD_LLM_NAME>` comes from `storyboard_metadata.cloud_llm_name`
+
+The cloud LLM **must** include these fields in `storyboard_metadata` so the script can generate the correct filename.
+Ensure values are filename-safe by avoiding characters like `\/:*?"<>|` and trimming extra spaces.
+
 **Critical Requirement (Strict Execution)**:
 - The cloud LLM **must** run the compose step **exactly** with the command shown below.
 - **Do not** alter or invent any arguments.
@@ -577,7 +606,7 @@ D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\c
 **Strict Command (Must Use As-Is)**:
 ```bash
 cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
-python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json
+python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json
 ```
 
 **Inputs (Reference Only; Do Not Override in Cloud LLM)**:
@@ -588,23 +617,23 @@ python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storybo
 - `--font_file`: Path to subtitle font. Use a relative path from `scripts\compose_video.py`:
   - `..\resource\font.ttf`
 - If `--font_file` is not provided and no default font is found, subtitle overlay will be skipped.
-- `--output-dir`: Output folder (default: `<SOURCE_VIDEO_FOLDER>\output`)
-- `--output-name`: Final output filename (default: `storyboard_merged.mp4`)
+- `--output-dir`: Output folder (default: `<WORKSPACE_DIR>`)
+- `--output-name`: Deprecated and ignored (final name is derived from storyboard metadata)
 
 **Command Example** (Local Override Only; do not use in cloud LLM):
 ```bash
 cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
-python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json --ffmpeg ..\bin\ffmpeg.exe --font_file ..\resource\font.ttf
+python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json --ffmpeg ..\bin\ffmpeg.exe --font_file ..\resource\font.ttf
 ```
 
 **Expected Output**:
-- Intermediate clip files and the final merged video are written to:
+- Intermediate clip files and the non‑BGM merged video are written to:
 ```
-<SOURCE_VIDEO_FOLDER>\output
+<WORKSPACE_DIR>\temp
 ```
-- Final merged file default name:
+- Final output (with BGM) is written to:
 ```
-storyboard_merged.mp4
+<WORKSPACE_DIR>\<VIDEO_THEME>_<DURATION>_bgm_<CLOUD_LLM_NAME>.mp4
 ```
 
 ---
@@ -625,56 +654,61 @@ dir "D:\data\videoclips\phone2\007_input\*.mp4"
 ```
 Output: List of video files found
 
-#### 2. Check Existing output_vlm.json Prompt Compatibility
-Check:
-- JSON structure is valid
-- Existing `prompt` matches current requirement ("连贯流畅、富有动感")
-- Reuse only if compatible; otherwise rerun FLAMA
+#### 2. Create Workspace
+Create:
+```
+D:\data\videoclips\phone2\007_input\editing_20230205_190123
+```
 
-#### 3. Verify FLAMA (if reuse is rejected)
+#### 3. Save User Input
+Write the original request to:
+```
+D:\data\videoclips\phone2\007_input\editing_20230205_190123\user_input.txt
+```
+
+#### 4. Verify FLAMA
 ```bash
 dir "D:\data\code\flama_code\flama\build\bin\Release\flama.exe"
 ```
 Output: File exists
 
-#### 4. Execute Analysis (if reuse is rejected)
+#### 5. Execute Analysis (Always Run)
 ```bash
 cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --json_file=D:\data\videoclips\phone2\007_input\output_vlm.json --prompt="请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点，描述环境、动作、构图、光线和运镜，突出流畅衔接与动感。输出不超过100字。"
+flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --json_file=D:\data\videoclips\phone2\007_input\editing_20230205_190123\output_vlm.json --prompt="请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点，描述环境、动作、构图、光线和运镜，突出流畅衔接与动感。输出不超过100字。"
 ```
 
-#### 5. Verify Output
+#### 6. Verify Output
 ```bash
-dir "D:\data\videoclips\phone2\007_input\output_vlm.json"
+dir "D:\data\videoclips\phone2\007_input\editing_20230205_190123\output_vlm.json"
 ```
 
-#### 6. Read and Analyze
+#### 7. Read and Analyze
 Read the complete output_vlm.json file and extract:
 - Total number of source videos
 - Total available segments
 - Scene variety and themes
 - Potential highlight moments
 
-#### 7. Generate Storyboard
+#### 8. Generate Storyboard
 Apply creative judgment to produce the final JSON storyboard.
 
-#### 8. Save Storyboard to File
-Write the complete storyboard JSON to the user's video directory:
-```bash
-# The storyboard.json file should be saved to:
-D:\data\videoclips\phone2\007_input\storyboard.json
+#### 9. Save Storyboard to Workspace
+Write the complete storyboard JSON to:
 ```
-Use the Write tool to create the `storyboard.json` file in `<USER_VIDEO_DIRECTORY>`. **Always overwrite existing storyboard.json; never reuse it.**
+D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json
+```
+Always overwrite existing storyboard.json; never reuse it.
 
-#### 9. Compose Final Video
+#### 10. Compose Final Video
 Run the compose script to generate the final video:
 ```bash
 cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
-python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\storyboard.json
+python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json
 ```
 Output will be saved to:
 ```
-D:\data\videoclips\phone2\007_input\output\storyboard_merged.mp4
+D:\data\videoclips\phone2\007_input\editing_20230205_190123\山间晨光之旅_30s_bgm_CloudLLM.mp4
 ```
 
 ---
@@ -690,7 +724,7 @@ D:\data\videoclips\phone2\007_input\output\storyboard_merged.mp4
 | "GPU initialization failed" | Driver/hardware issue | Use --mode=sw for software decode |
 | "Model not found" | VLM model missing | Check config.json model_path |
 | "output_vlm.json empty" | Processing failed | Check console for specific errors |
-| "storyboard.json not created" | Write tool failed | Verify write permissions to user directory |
+| "storyboard.json not created" | Write tool failed | Verify write permissions to workspace directory |
 | "Insufficient segments" | Short video files | Adjust prompt or combine videos |
 
 ### Fallback Strategies
@@ -714,12 +748,16 @@ Before delivering the final storyboard, verify:
 - [ ] No duplicate segments used consecutively
 - [ ] Transitions are appropriate for content type
 - [ ] FLAMA prompt explicitly reflects current user requirements
-- [ ] Existing `output_vlm.json` prompt compatibility was checked before reuse
 - [ ] Storyboard theme/mood/pacing clearly matches user request keywords
 - [ ] JSON is valid and well-formatted
 - [ ] `audio_design.background_music.file_path` is a valid absolute path to an existing BGM file
-- [ ] `output_vlm.json` saved to `<USER_VIDEO_DIRECTORY>\output_vlm.json`
-- [ ] `storyboard.json` saved to `<USER_VIDEO_DIRECTORY>\storyboard.json`
+- [ ] Workspace folder `editing_YYYYMMDD_HHMMSS` created under the user video directory
+- [ ] `user_input.txt` saved to `<WORKSPACE_DIR>\user_input.txt`
+- [ ] `output_vlm.json` saved to `<WORKSPACE_DIR>\output_vlm.json`
+- [ ] `storyboard.json` saved to `<WORKSPACE_DIR>\storyboard.json`
+- [ ] `storyboard_metadata.theme`, `target_duration_seconds`, and `cloud_llm_name` are present
+- [ ] Temp folder created at `<WORKSPACE_DIR>\temp` with all intermediate video files
+- [ ] Final output saved to `<WORKSPACE_DIR>\<VIDEO_THEME>_<DURATION>_bgm_<CLOUD_LLM_NAME>.mp4`
 
 ---
 

@@ -3,9 +3,9 @@ import json
 import os
 import random
 import re
+import shutil
 import subprocess
 import sys
-from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -20,6 +20,54 @@ class ClipSpec:
     out_point: float
     duration: float
     subtitle: str
+
+
+@dataclass
+class StoryboardMeta:
+    theme: str
+    target_duration: Optional[float]
+    actual_duration: Optional[float]
+    cloud_llm_name: str
+
+
+def coerce_float(value: object) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def sanitize_filename_component(
+    value: str,
+    fallback: str,
+    max_len: int = 48,
+) -> str:
+    safe = str(value or "").strip()
+    if not safe:
+        safe = fallback
+    safe = re.sub(r'[<>:"/\\|?*]', "_", safe)
+    safe = re.sub(r"\s+", "_", safe)
+    safe = safe.strip("._ ")
+    if not safe:
+        safe = fallback
+    if len(safe) > max_len:
+        safe = safe[:max_len]
+    return safe
+
+
+def format_duration_component(
+    target: Optional[float],
+    actual: Optional[float],
+    clips: List[ClipSpec],
+) -> str:
+    duration = target or actual
+    if duration is None:
+        duration = sum(clip.duration for clip in clips)
+    if not duration or duration <= 0:
+        return "unknown"
+    return f"{int(round(duration))}s"
 
 
 def resolve_storyboard_bgm_path(
@@ -45,12 +93,37 @@ def resolve_storyboard_bgm_path(
     return relative_candidate
 
 
-def load_storyboard(path: Path) -> Tuple[List[ClipSpec], Optional[Path]]:
+def load_storyboard(
+    path: Path,
+) -> Tuple[List[ClipSpec], Optional[Path], StoryboardMeta]:
     if not path.exists():
         raise FileNotFoundError(f"Storyboard not found: {path}")
 
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
+
+    storyboard_metadata = data.get("storyboard_metadata") or {}
+    story_outline = data.get("story_outline") or {}
+    theme_value = (
+        storyboard_metadata.get("theme")
+        or story_outline.get("title")
+        or "video"
+    )
+    cloud_llm_name = (
+        storyboard_metadata.get("cloud_llm_name")
+        or storyboard_metadata.get("llm_name")
+        or "cloud_llm"
+    )
+    meta = StoryboardMeta(
+        theme=str(theme_value).strip() or "video",
+        target_duration=coerce_float(
+            storyboard_metadata.get("target_duration_seconds")
+        ),
+        actual_duration=coerce_float(
+            storyboard_metadata.get("actual_duration_seconds")
+        ),
+        cloud_llm_name=str(cloud_llm_name).strip() or "cloud_llm",
+    )
 
     audio_design = data.get("audio_design") or {}
     background_music = audio_design.get("background_music") or {}
@@ -96,7 +169,7 @@ def load_storyboard(path: Path) -> Tuple[List[ClipSpec], Optional[Path]]:
             )
         )
 
-    return sorted(specs, key=lambda c: c.sequence_order), bgm_path
+    return sorted(specs, key=lambda c: c.sequence_order), bgm_path, meta
 
 
 def wrap_text(text: str, max_len: int) -> str:
@@ -597,14 +670,19 @@ def concat_videos(
     run_cmd(cmd_filter_v, dry_run=dry_run)
 
 
-def resolve_output_dir(clips: List[ClipSpec], override: Optional[str]) -> Path:
+def resolve_output_dir(storyboard_path: Path, override: Optional[str]) -> Path:
     if override:
         return Path(override)
-    return clips[0].source_video.parent / "output"
+    return storyboard_path.parent
 
-def build_final_output_name() -> str:
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"finial_video_{timestamp}.mp4"
+def build_final_output_name(meta: StoryboardMeta, clips: List[ClipSpec]) -> str:
+    theme = sanitize_filename_component(meta.theme, "video")
+    duration = sanitize_filename_component(
+        format_duration_component(meta.target_duration, meta.actual_duration, clips),
+        "unknown",
+    )
+    llm_name = sanitize_filename_component(meta.cloud_llm_name, "cloud_llm")
+    return f"{theme}_{duration}_bgm_{llm_name}.mp4"
 
 
 def parse_args() -> argparse.Namespace:
@@ -624,14 +702,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         default=None,
-        help="Output directory for temp and final files (default: source folder/output)",
+        help="Output directory for temp and final files (default: storyboard folder)",
     )
     parser.add_argument(
         "--output-name",
         default=None,
         help=(
             "Deprecated. Ignored. Final output is always named "
-            "'finial_video_YYYYMMDD_HHMMSS.mp4' in the output folder."
+            "'{theme}_{duration}_bgm_{cloud_llm}.mp4' in the output folder."
         ),
     )
     parser.add_argument(
@@ -668,17 +746,33 @@ def main() -> int:
     if not args.ffmpeg:
         args.ffmpeg = find_default_ffmpeg()
     storyboard_path = Path(args.storyboard)
-    clips, storyboard_bgm = load_storyboard(storyboard_path)
+    clips, storyboard_bgm, meta = load_storyboard(storyboard_path)
 
-    output_dir = resolve_output_dir(clips, args.output_dir)
+    output_dir = resolve_output_dir(storyboard_path, args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     temp_dir = output_dir / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
 
+    if meta.theme == "video":
+        print(
+            "Warning: storyboard_metadata.theme is missing. "
+            "Using default value 'video' for output naming."
+        )
+    if meta.cloud_llm_name == "cloud_llm":
+        print(
+            "Warning: storyboard_metadata.cloud_llm_name is missing. "
+            "Using default value 'cloud_llm' for output naming."
+        )
+    if meta.target_duration is None and meta.actual_duration is None:
+        print(
+            "Warning: storyboard_metadata.target_duration_seconds is missing. "
+            "Using sum of clip durations for output naming."
+        )
+
     if args.output_name:
         print(
             "Warning: --output-name is ignored. "
-            "Final output is always named finial_video_YYYYMMDD_HHMMSS.mp4."
+            "Final output name is derived from storyboard metadata."
         )
 
     font_file = None
@@ -733,7 +827,7 @@ def main() -> int:
 
         processed_files.append(subtitle_path)
 
-    final_output = output_dir / build_final_output_name()
+    final_output = temp_dir / "merged_no_bgm.mp4"
     print(f"\n== Concatenating {len(processed_files)} clips ==")
     concat_videos(
         ffmpeg=args.ffmpeg,
@@ -753,7 +847,7 @@ def main() -> int:
         )
         bgm_file = find_bgm_file()
     if bgm_file:
-        bgm_output = output_dir / f"{final_output.stem}_bgm.mp4"
+        bgm_output = output_dir / build_final_output_name(meta, clips)
         if storyboard_bgm and bgm_file == storyboard_bgm:
             print(f"\n== Adding storyboard BGM: {bgm_file} ==")
         else:
@@ -767,11 +861,17 @@ def main() -> int:
             dry_run=args.dry_run,
         )
     else:
-        print("\nWarning: No BGM mp3 found. Skipping BGM overlay.")
+        bgm_output = output_dir / build_final_output_name(meta, clips)
+        print(
+            "\nWarning: No BGM mp3 found. "
+            "Copying non-BGM output to final name."
+        )
+        if not args.dry_run:
+            shutil.copy2(final_output, bgm_output)
 
-    print(f"\nDone. Output: {final_output}")
+    print(f"\nDone. Intermediate (no BGM): {final_output}")
     if bgm_output:
-        print(f"Done. Output with BGM: {bgm_output}")
+        print(f"Done. Final output: {bgm_output}")
     return 0
 
 
