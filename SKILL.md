@@ -1,5 +1,5 @@
 ---
-name: video-editing-skills-vlog
+name: video-editing-skills
 description: "Vlog video editing workflow using local FLAMA for AI-powered video analysis, storyboard generation, and optional final video composition via compose_video.py. Use this skill when: (1) User provides a folder containing video files and asks to create a vlog editing script/storyboard, (2) User requests video clip analysis and selection for vlog creation, (3) User wants to generate a JSON-format video editing plan with specified duration (e.g., 30 seconds, 60 seconds), (4) User mentions keywords like 'vlog剪辑', '视频剪辑脚本', 'video storyboard', or 'editing script', (5) User wants to automatically render a final video from storyboard.json. This skill invokes the local flama.exe tool to analyze video segments using VLM, then generates professional storyboards with narrative structure, clip selection, voiceover suggestions, and timing information, and can call compose_video.py to render the final video."
 ---
 
@@ -395,7 +395,53 @@ For 90-second vlog: Select ~30 segments
 - 情感真挚，不矫揉造作
 - 主题升华，点睛之笔
 
-#### 7.4 Output Storyboard JSON Format
+#### 7.4 BGM Selection (Required)
+
+**Objective**: Select a single background music (BGM) file that best matches the current vlog's content, theme, mood, and pacing.
+
+**BGM Library**:
+- Audio files folder: `C:\Users\SAS\.claude\skills\video-editing-skills\resource\bgm`
+- Style index JSON: `C:\Users\SAS\.claude\skills\video-editing-skills\resource\bgm\bgm_style.json`
+
+**Selection Rules**:
+1. **Must read** `bgm_style.json` and evaluate the available tracks by their `analysis` fields.
+2. **Match priorities** (from strongest to weakest):
+   - User requirements (`theme`, `mood`, `pacing`, `must_capture`)
+   - Storyboard narrative arc and overall tone
+   - Audio descriptors in `analysis` (emotion, rhythm, timbre, instruments, scenarios, style, summary)
+3. **Choose exactly one** BGM track. Do not leave this empty and do not choose randomly.
+4. **Write the full absolute path** of the selected BGM into the storyboard JSON under:
+   - `audio_design.background_music.file_path`
+5. Also include the chosen track’s metadata for traceability:
+   - `audio_design.background_music.style_tag`
+   - `audio_design.background_music.summary`
+
+**BGM Selection Output Example**:
+```json
+"audio_design": {
+  "background_music": {
+    "file_path": "C:\\Users\\SAS\\.claude\\skills\\video-editing-skills\\resource\\bgm\\0aa3bfd386bf595b301119302595aaf3.mp3",
+    "style_tag": "舒缓优美",
+    "summary": "以钢琴、小提琴和长笛为主的慢速4/4拍音乐，音色柔和温馨，营造出平和安宁与浪漫抒情的氛围。",
+    "mood": "uplifting, peaceful",
+    "tempo": "slow to medium",
+    "suggested_genres": ["acoustic", "ambient", "piano"],
+    "volume_curve": "fade in at start, peak at climax, fade out at end"
+  },
+  "sound_design": {
+    "use_original_audio": true,
+    "ambient_enhancement": "nature sounds where applicable",
+    "audio_ducking": "lower music during voiceover"
+  }
+}
+```
+
+**Hard Requirement**:
+- The cloud LLM must always write a valid `audio_design.background_music.file_path` pointing to an existing file in the BGM library. This is used directly by `compose_video.py`.
+
+---
+
+#### 7.5 Output Storyboard JSON Format
 
 **IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` in the user's video directory (`<USER_VIDEO_DIRECTORY>\storyboard.json`). **Even if a storyboard.json already exists, always regenerate a new storyboard and overwrite it. Do not reuse existing storyboard.json.** Use the Write tool to create this file after generating the complete storyboard JSON content.
 
@@ -472,6 +518,9 @@ For 90-second vlog: Select ~30 segments
 
   "audio_design": {
     "background_music": {
+      "file_path": "C:\\path\\to\\resource\\bgm\\selected_bgm.mp3",
+      "style_tag": "舒缓优美",
+      "summary": "简要说明这首BGM的风格与适配理由",
       "mood": "uplifting, peaceful",
       "tempo": "slow to medium",
       "suggested_genres": ["acoustic", "ambient", "piano"],
@@ -513,6 +562,11 @@ For 90-second vlog: Select ~30 segments
 ```
 D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py
 ```
+
+**BGM Integration (Required)**:
+- `compose_video.py` will read `audio_design.background_music.file_path` from `storyboard.json` and use it directly.
+- If the specified file does not exist, the script will fall back to a random BGM in `resource\bgm`.
+- Therefore, the storyboard **must** contain a valid absolute path to the chosen BGM file.
 
 **Critical Requirement (Strict Execution)**:
 - The cloud LLM **must** run the compose step **exactly** with the command shown below.
@@ -663,6 +717,7 @@ Before delivering the final storyboard, verify:
 - [ ] Existing `output_vlm.json` prompt compatibility was checked before reuse
 - [ ] Storyboard theme/mood/pacing clearly matches user request keywords
 - [ ] JSON is valid and well-formatted
+- [ ] `audio_design.background_music.file_path` is a valid absolute path to an existing BGM file
 - [ ] `output_vlm.json` saved to `<USER_VIDEO_DIRECTORY>\output_vlm.json`
 - [ ] `storyboard.json` saved to `<USER_VIDEO_DIRECTORY>\storyboard.json`
 

@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 
 @dataclass
@@ -22,12 +22,44 @@ class ClipSpec:
     subtitle: str
 
 
-def load_storyboard(path: Path) -> List[ClipSpec]:
+def resolve_storyboard_bgm_path(
+    raw_value: str,
+    storyboard_path: Path,
+) -> Optional[Path]:
+    if not raw_value:
+        return None
+    candidate = Path(str(raw_value))
+    if candidate.is_absolute():
+        return candidate
+
+    relative_candidate = (storyboard_path.parent / candidate).resolve()
+    if relative_candidate.exists():
+        return relative_candidate
+
+    script_dir = Path(__file__).resolve().parent
+    bgm_dir = script_dir.parent / "resource" / "bgm"
+    if bgm_dir.exists():
+        fallback_candidate = bgm_dir / candidate.name
+        if fallback_candidate.exists():
+            return fallback_candidate
+    return relative_candidate
+
+
+def load_storyboard(path: Path) -> Tuple[List[ClipSpec], Optional[Path]]:
     if not path.exists():
         raise FileNotFoundError(f"Storyboard not found: {path}")
 
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
+
+    audio_design = data.get("audio_design") or {}
+    background_music = audio_design.get("background_music") or {}
+    bgm_value = (
+        background_music.get("file_path")
+        or background_music.get("bgm_file")
+        or background_music.get("selected_bgm")
+    )
+    bgm_path = resolve_storyboard_bgm_path(str(bgm_value), path) if bgm_value else None
 
     clips = data.get("clips", [])
     if not clips:
@@ -64,7 +96,7 @@ def load_storyboard(path: Path) -> List[ClipSpec]:
             )
         )
 
-    return sorted(specs, key=lambda c: c.sequence_order)
+    return sorted(specs, key=lambda c: c.sequence_order), bgm_path
 
 
 def wrap_text(text: str, max_len: int) -> str:
@@ -636,7 +668,7 @@ def main() -> int:
     if not args.ffmpeg:
         args.ffmpeg = find_default_ffmpeg()
     storyboard_path = Path(args.storyboard)
-    clips = load_storyboard(storyboard_path)
+    clips, storyboard_bgm = load_storyboard(storyboard_path)
 
     output_dir = resolve_output_dir(clips, args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -713,10 +745,19 @@ def main() -> int:
 
     ffprobe = resolve_ffprobe(args.ffmpeg)
     bgm_output: Optional[Path] = None
-    bgm_file = find_bgm_file()
+    bgm_file = storyboard_bgm or find_bgm_file()
+    if storyboard_bgm and not storyboard_bgm.exists():
+        print(
+            f"\nWarning: Storyboard BGM not found: {storyboard_bgm}. "
+            "Falling back to random selection."
+        )
+        bgm_file = find_bgm_file()
     if bgm_file:
         bgm_output = output_dir / f"{final_output.stem}_bgm.mp4"
-        print(f"\n== Adding BGM: {bgm_file} ==")
+        if storyboard_bgm and bgm_file == storyboard_bgm:
+            print(f"\n== Adding storyboard BGM: {bgm_file} ==")
+        else:
+            print(f"\n== Adding BGM (fallback/random): {bgm_file} ==")
         add_bgm_to_video(
             ffmpeg=args.ffmpeg,
             ffprobe=ffprobe,
