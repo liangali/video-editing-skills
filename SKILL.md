@@ -576,65 +576,99 @@ D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\c
 ```
 
 **BGM Integration (Required)**:
-- `compose_video.py` will read `audio_design.background_music.file_path` from `storyboard.json` and use it directly.
-- If the specified file does not exist, the script will fall back to a random BGM in `resource\bgm`.
+- `compose_video.py` reads `audio_design.background_music.file_path` from `storyboard.json` and uses it directly.
+- If the specified file does not exist, the script will fall back to a random BGM from `resource\bgm`.
 - Therefore, the storyboard **must** contain a valid absolute path to the chosen BGM file.
 
-**Workspace Output Organization (Required)**:
-- Temp folder for intermediates: `<WORKSPACE_DIR>\temp`
-- All intermediate video files (including the non‑BGM merged file) must be saved in `temp`.
-- Final output (with BGM) must be saved in the root of `WORKSPACE_DIR`.
+**Workspace Output Organization (Critical)**:
+
+The `compose_video.py` script automatically determines output locations based on the storyboard file's parent directory:
+- **Workspace directory** = Parent directory of `storyboard.json` (i.e., the `editing_YYYYMMDD_HHMMSS` folder)
+- **Temp folder** = `<WORKSPACE_DIR>\temp`
+
+**File Organization Rules**:
+
+| File Type | Location | Examples |
+|-----------|----------|----------|
+| All intermediate clip files | `<WORKSPACE_DIR>\temp` | `clip_01_id1_raw.mp4`, `clip_01_id1_sub.mp4` |
+| Merged video WITHOUT BGM | `<WORKSPACE_DIR>\temp` | `merged_no_bgm.mp4` |
+| Concatenation list files | `<WORKSPACE_DIR>\temp` | `merged_no_bgm.concat.txt` |
+| **Final output WITH BGM** | `<WORKSPACE_DIR>` (root) | `日常诗意瞬间_30s_bgm_ClaudeOpus.mp4` |
 
 **Final Output Naming Rule (Required)**:
 ```
-<VIDEO_THEME>_<DURATION>_bgm_<CLOUD_LLM_NAME>.mp4
+<VIDEO_THEME>_<DURATION>s_bgm_<CLOUD_LLM_NAME>.mp4
 ```
 Where:
-- `<VIDEO_THEME>` comes from `storyboard_metadata.theme`
-- `<DURATION>` is `target_duration_seconds` rounded to seconds (e.g., `30s`)
+- `<VIDEO_THEME>` comes from `storyboard_metadata.theme` (sanitized for filename safety)
+- `<DURATION>s` is `target_duration_seconds` with "s" suffix (e.g., `30s`, `60s`)
 - `<CLOUD_LLM_NAME>` comes from `storyboard_metadata.cloud_llm_name`
 
-The cloud LLM **must** include these fields in `storyboard_metadata` so the script can generate the correct filename.
-Ensure values are filename-safe by avoiding characters like `\/:*?"<>|` and trimming extra spaces.
+**Examples**:
+```
+日常诗意瞬间_30s_bgm_ClaudeOpus.mp4
+山间晨光之旅_60s_bgm_Claude.mp4
+城市探索_45s_bgm_GPT4.mp4
+```
+
+**Required Storyboard Metadata Fields**:
+The cloud LLM **must** include these fields in `storyboard_metadata` for proper output naming:
+- `theme`: Video theme/title (e.g., "日常诗意瞬间")
+- `target_duration_seconds`: Target duration in seconds (e.g., 30)
+- `cloud_llm_name`: Name of the cloud LLM generating the storyboard (e.g., "ClaudeOpus")
+
+**Filename Safety**:
+The script automatically sanitizes filenames by:
+- Replacing invalid characters (`\/:*?"<>|`) with underscores
+- Removing leading/trailing whitespace and underscores
+- Collapsing multiple consecutive underscores
 
 **Critical Requirement (Strict Execution)**:
 - The cloud LLM **must** run the compose step **exactly** with the command shown below.
 - **Do not** alter or invent any arguments.
-- **Do not** pass `--output-name` or `--output-dir`.
-- **Do not** change the output naming convention defined in `compose_video.py`. The final file naming must remain exactly as implemented there.
+- The script automatically derives all output paths from the storyboard location.
 
 **Strict Command (Must Use As-Is)**:
 ```bash
-cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
-python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json
+python "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\storyboard.json"
 ```
 
-**Inputs (Reference Only; Do Not Override in Cloud LLM)**:
-- `--storyboard`: Full path to `storyboard.json`
-- `--ffmpeg`: Path to ffmpeg executable. If omitted, `compose_video.py` uses `..\bin\ffmpeg.exe` when present, otherwise `ffmpeg` in PATH.
-
-**Optional Inputs** (Manual Local Use Only; cloud LLM must not use):
-- `--font_file`: Path to subtitle font. Use a relative path from `scripts\compose_video.py`:
-  - `..\resource\font.ttf`
-- If `--font_file` is not provided and no default font is found, subtitle overlay will be skipped.
-- `--output-dir`: Output folder (default: `<WORKSPACE_DIR>`)
-- `--output-name`: Deprecated and ignored (final name is derived from storyboard metadata)
-
-**Command Example** (Local Override Only; do not use in cloud LLM):
+**Example**:
 ```bash
-cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
-python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json --ffmpeg ..\bin\ffmpeg.exe --font_file ..\resource\font.ttf
+python "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py" --storyboard "D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json"
 ```
 
-**Expected Output**:
-- Intermediate clip files and the non‑BGM merged video are written to:
+**Script Behavior**:
+1. Reads `storyboard.json` and extracts clips and metadata
+2. Creates `<WORKSPACE_DIR>\temp` folder if not exists
+3. Extracts and processes each clip → saves to `temp` folder
+4. Concatenates all clips → saves `merged_no_bgm.mp4` to `temp` folder
+5. Reads BGM path from storyboard (falls back to random if not found)
+6. Adds BGM to merged video → saves final output to `<WORKSPACE_DIR>` root
+
+**Expected Console Output**:
 ```
-<WORKSPACE_DIR>\temp
+Workspace directory: D:\data\videoclips\phone2\007_input\editing_20230205_190123
+Temp directory: D:\data\videoclips\phone2\007_input\editing_20230205_190123\temp
+Video theme: 山间晨光之旅
+Target duration: 30s
+Cloud LLM: ClaudeOpus
+
+== Processing clip 1 (clip_id=1) ==
+...
+== Concatenating 10 clips ==
+...
+Using BGM from storyboard: C:\Users\SAS\.claude\skills\video-editing-skills\resource\bgm\...
+== Adding BGM: ... ==
+...
+Done. Final output with BGM: D:\data\videoclips\phone2\007_input\editing_20230205_190123\山间晨光之旅_30s_bgm_ClaudeOpus.mp4
+Intermediate files saved to: D:\data\videoclips\phone2\007_input\editing_20230205_190123\temp
 ```
-- Final output (with BGM) is written to:
-```
-<WORKSPACE_DIR>\<VIDEO_THEME>_<DURATION>_bgm_<CLOUD_LLM_NAME>.mp4
-```
+
+**Optional Inputs** (Manual Local Use Only):
+- `--ffmpeg`: Path to ffmpeg executable. If omitted, uses `..\bin\ffmpeg.exe` when present, otherwise `ffmpeg` in PATH.
+- `--font_file`: Path to subtitle font. Default: `..\resource\font.ttf` relative to script.
+- `--dry-run`: Print ffmpeg commands without executing.
 
 ---
 
@@ -703,12 +737,24 @@ Always overwrite existing storyboard.json; never reuse it.
 #### 10. Compose Final Video
 Run the compose script to generate the final video:
 ```bash
-cd /d "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts"
-python compose_video.py --storyboard D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json
+python "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py" --storyboard "D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json"
 ```
-Output will be saved to:
+
+**Output Structure**:
 ```
-D:\data\videoclips\phone2\007_input\editing_20230205_190123\山间晨光之旅_30s_bgm_CloudLLM.mp4
+D:\data\videoclips\phone2\007_input\editing_20230205_190123\
+├── user_input.txt                              # User's original request
+├── output_vlm.json                             # FLAMA analysis results
+├── storyboard.json                             # Generated storyboard
+├── 山间晨光之旅_30s_bgm_ClaudeOpus.mp4         # ✅ FINAL OUTPUT (with BGM)
+└── temp\                                       # Intermediate files
+    ├── clip_01_id1_raw.mp4
+    ├── clip_01_id1_sub.mp4
+    ├── clip_02_id2_raw.mp4
+    ├── clip_02_id2_sub.mp4
+    ├── ...
+    ├── merged_no_bgm.mp4                       # Merged video without BGM
+    └── merged_no_bgm.concat.txt
 ```
 
 ---
