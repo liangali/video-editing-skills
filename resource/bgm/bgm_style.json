@@ -1,679 +1,666 @@
 ﻿{
-    "舒缓优美": {
-        "0aa3bfd386bf595b301119302595aaf3.mp3": {
-            "file_path": "..\\..\\bgm\\all\\0aa3bfd386bf595b301119302595aaf3.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "感伤、思考、回忆",
-                "timbre": "柔和、温暖、明亮、清脆",
-                "instruments": "钢琴、小提琴、合成器",
-                "scenarios": "电影、电视剧",
-                "style": "梦幻空灵",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴、小提琴、合成器；情感：感伤、思考、回忆；场景：电影、电视剧"
-            }
-        },
-        "0d953a14e442bae981fad536a3ac702c.mp3": {
-            "file_path": "..\\..\\bgm\\all\\0d953a14e442bae981fad536a3ac702c.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "安慰、平静、深情、坚定",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴",
-                "scenarios": "MV",
-                "style": "梦幻空灵",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：安慰、平静、深情、坚定；场景：MV"
-            }
-        },
-        "2c131ade446e69d3e1ad9a004451f3d0.mp3": {
-            "file_path": "..\\..\\bgm\\all\\2c131ade446e69d3e1ad9a004451f3d0.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "忧伤、深沉、深情、思考",
-                "timbre": "柔和、温暖、明亮、清脆",
-                "instruments": "钢琴、小提琴",
-                "scenarios": "电影、电视剧、纪录片、婚礼、毕业典礼、纪录",
-                "style": "浪漫抒情",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴、小提琴；情感：忧伤、深沉、深情、思考；场景：电影、电视剧、纪录片、婚礼、毕业典礼、纪录"
-            }
-        },
-        "4a890021a08f3741e5523a863fab5a78.mp3": {
-            "file_path": "..\\..\\bgm\\all\\4a890021a08f3741e5523a863fab5a78.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "孤独、深情、思考",
-                "timbre": "柔和、温暖、明亮、清脆、清新",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、游戏、动画、宣传片",
-                "style": "浪漫",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：孤独、深情、思考；场景：电影、电视剧、广告、游戏、动画、宣传片"
-            }
-        },
-        "4c339799d5079214b9b1797e2c139178.mp3": {
-            "file_path": "..\\..\\bgm\\all\\4c339799d5079214b9b1797e2c139178.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "感伤、思念、深沉",
-                "timbre": "柔和",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、纪录片、广告、纪录",
-                "style": "新古典",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：感伤、思念、深沉；场景：电影、电视剧、纪录片、广告、纪录"
-            }
-        },
-        "524497676191dc2991c23a40bdeecc74.mp3": {
-            "file_path": "..\\..\\bgm\\all\\524497676191dc2991c23a40bdeecc74.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "欢快、抒情",
-                "timbre": "明亮、清新",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、新闻、演讲、会议",
-                "style": "舒缓优美",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：欢快、抒情；场景：电影、电视剧、广告、新闻、演讲、会议"
-            }
-        },
-        "67e531b4ac238df8896949bb6e5997f9.mp3": {
-            "file_path": "..\\..\\bgm\\all\\67e531b4ac238df8896949bb6e5997f9.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "怀念、平静、思考、回忆",
-                "timbre": "柔和、温暖、清脆",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、商业活动",
-                "style": "梦幻空灵",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：怀念、平静、思考、回忆；场景：电影、电视剧、广告、商业活动"
-            }
-        },
-        "717bc081487c7c5974c906431a31bfb4.mp3": {
-            "file_path": "..\\..\\bgm\\all\\717bc081487c7c5974c906431a31bfb4.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "深沉、抒情、思考",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、婚礼、毕业典礼",
-                "style": "抒情",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：深沉、抒情、思考；场景：电影、电视剧、广告、婚礼、毕业典礼"
-            }
-        },
-        "8dad506d4ad1a60245921e3e4c85b137.mp3": {
-            "file_path": "..\\..\\bgm\\all\\8dad506d4ad1a60245921e3e4c85b137.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "深沉、平静",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴",
-                "scenarios": "情感、爱情、亲情等需要表达深情的场景",
-                "style": "梦幻空灵",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：深沉、平静；场景：情感、爱情、亲情等需要表达深情的场景"
-            }
-        },
-        "912fa6038664e1f281852d3924b9045e.mp3": {
-            "file_path": "..\\..\\bgm\\all\\912fa6038664e1f281852d3924b9045e.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "深情",
-                "timbre": "柔和、温暖、清脆",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、婚礼、庆祝、品牌",
-                "style": "浪漫",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：深情；场景：电影、电视剧、广告、婚礼、庆祝、品牌"
-            }
-        },
-        "91ab2d2b0c7a63eb94163d3047745c8c.mp3": {
-            "file_path": "..\\..\\bgm\\all\\91ab2d2b0c7a63eb94163d3047745c8c.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "快乐、愉悦",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、小提琴",
-                "scenarios": "电影、电视剧、广告、婚礼、庆祝、品牌",
-                "style": "浪漫",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴、小提琴；情感：快乐、愉悦；场景：电影、电视剧、广告、婚礼、庆祝、品牌"
-            }
-        },
-        "a660c55265f15eada1085b9ca91a84ed.mp3": {
-            "file_path": "..\\..\\bgm\\all\\a660c55265f15eada1085b9ca91a84ed.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "抒情、深情、思考",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴",
-                "scenarios": "电影、广告、新闻、品牌",
-                "style": "抒情",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：抒情、深情、思考；场景：电影、广告、新闻、品牌"
-            }
-        },
-        "b9f1ea24b572b1d58587eb925d32f2fa.mp3": {
-            "file_path": "..\\..\\bgm\\all\\b9f1ea24b572b1d58587eb925d32f2fa.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "深沉、平静",
-                "timbre": "柔和、明亮、清脆、清新",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、婚礼、毕业典礼",
-                "style": "浪漫",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：深沉、平静；场景：电影、电视剧、广告、婚礼、毕业典礼"
-            }
-        },
-        "c6cb32c1bc373e9e84c6e6ce085fb055.mp3": {
-            "file_path": "..\\..\\bgm\\all\\c6cb32c1bc373e9e84c6e6ce085fb055.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "感伤、怀念、抒情、思考",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、吉他、合成器",
-                "scenarios": "电影、电视剧、广告",
-                "style": "轻松愉悦",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴、吉他、合成器；情感：感伤、怀念、抒情、思考；场景：电影、电视剧、广告"
-            }
-        },
-        "d159ce12bbfe24b8d26443ae0824f517.mp3": {
-            "file_path": "..\\..\\bgm\\all\\d159ce12bbfe24b8d26443ae0824f517.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "温暖、放松、舒适",
-                "timbre": "柔和、温暖、明亮、清脆",
-                "instruments": "钢琴、小提琴、吉他",
-                "scenarios": "电影",
-                "style": "新奇喜剧",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴、小提琴、吉他；情感：温暖、放松、舒适；场景：电影"
-            }
-        },
-        "d7656cb980787356f733a997041c58a5.mp3": {
-            "file_path": "..\\..\\bgm\\all\\d7656cb980787356f733a997041c58a5.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "思念、幸福、抒情、深情",
-                "timbre": "柔和、温暖、明亮、清脆",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、婚礼、毕业典礼",
-                "style": "浪漫",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：思念、幸福、抒情、深情；场景：电影、电视剧、广告、婚礼、毕业典礼"
-            }
-        },
-        "d77a622e6c4d682bd8981a304dcdf1e7.mp3": {
-            "file_path": "..\\..\\bgm\\all\\d77a622e6c4d682bd8981a304dcdf1e7.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "温馨、平静、舒适",
-                "timbre": "柔和、温暖、清脆",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、婚礼、毕业典礼、企业宣传",
-                "style": "情感：梦幻、甜美、温柔",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：温馨、平静、舒适；场景：电影、电视剧、广告、婚礼、毕业典礼、企业宣传"
-            }
-        },
-        "db5d37a7eef0f01c8e838aca56e7355b.mp3": {
-            "file_path": "..\\..\\bgm\\all\\db5d37a7eef0f01c8e838aca56e7355b.mp3",
-            "analysis": {
-                "rhythm": "这是一首具有优美旋律的钢琴曲",
-                "emotion": "深情",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、小提琴",
-                "scenarios": "电影、电视剧",
-                "style": "梦幻空灵",
-                "style_tag": "舒缓优美",
-                "summary": "这是一首具有优美旋律的钢琴曲；乐器：钢琴、小提琴；情感：深情；场景：电影、电视剧"
-            }
-        },
-        "e6007f68d53c0928083a87bc034dd685.mp3": {
-            "file_path": "..\\..\\bgm\\all\\e6007f68d53c0928083a87bc034dd685.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "深沉、思考",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴",
-                "scenarios": "广告",
-                "style": "舒缓优美",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：深沉、思考；场景：广告"
-            }
-        },
-        "edc07fe9a29cbe1192f0e06cbb79dffa.mp3": {
-            "file_path": "..\\..\\bgm\\all\\edc07fe9a29cbe1192f0e06cbb79dffa.mp3",
-            "analysis": {
-                "rhythm": "这是一首风格是Pop的歌",
-                "emotion": "深沉、希望、抒情",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告",
-                "style": "风格名称：梦幻空灵",
-                "style_tag": "舒缓优美",
-                "summary": "这是一首风格是Pop的歌；乐器：钢琴；情感：深沉、希望、抒情；场景：电影、电视剧、广告"
-            }
-        },
-        "f578814553b8eaf8c1ccca8c9c71e134.mp3": {
-            "file_path": "..\\..\\bgm\\all\\f578814553b8eaf8c1ccca8c9c71e134.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "深情",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、广告、游戏",
-                "style": "浪漫",
-                "style_tag": "舒缓优美",
-                "summary": "4/4拍；乐器：钢琴；情感：深情；场景：电影、电视剧、广告、游戏"
-            }
-        }
+  "舒缓优美": {
+    "0aa3bfd386bf595b301119302595aaf3.mp3": {
+      "file_path": "0aa3bfd386bf595b301119302595aaf3.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，节奏稳定。",
+        "emotion": "思考、回忆、轻柔感伤。",
+        "timbre": "柔和、温暖、明亮清脆。",
+        "instruments": "钢琴，小提琴，长笛，电子合成器。",
+        "scenarios": "情感表达，治愈系，童话奇幻，浪漫抒情。",
+        "style": "梦幻空灵",
+        "style_tag": "舒缓优美",
+        "summary": "以钢琴、小提琴和长笛为主的慢速4/4拍音乐，音色柔和温馨，营造出平和安宁与浪漫抒情的氛围。"
+      }
     },
-    "温馨浪漫": {
-        "1371dedeea44a71fbc9578851b207427.mp3": {
-            "file_path": "..\\..\\bgm\\all\\1371dedeea44a71fbc9578851b207427.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "平静",
-                "timbre": "柔和、温暖、明亮",
-                "instruments": "钢琴",
-                "scenarios": "广告、商业活动、演讲、会议、品牌",
-                "style": "浪漫",
-                "style_tag": "温馨浪漫",
-                "summary": "4/4拍；乐器：钢琴；情感：平静；场景：广告、商业活动、演讲、会议、品牌"
-            }
-        },
-        "6150b9279991a52a416f6d325be316cf.mp3": {
-            "file_path": "..\\..\\bgm\\all\\6150b9279991a52a416f6d325be316cf.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "温暖、平静、舒适",
-                "timbre": "柔和、温暖、明亮",
-                "instruments": "钢琴、小提琴、吉他",
-                "scenarios": "电影、电视剧、广告",
-                "style": "温馨浪漫",
-                "style_tag": "温馨浪漫",
-                "summary": "4/4拍；乐器：钢琴、小提琴、吉他；情感：温暖、平静、舒适；场景：电影、电视剧、广告"
-            }
-        },
-        "8c1dab0309843f995d3f91b7cf1a39d4.mp3": {
-            "file_path": "..\\..\\bgm\\all\\8c1dab0309843f995d3f91b7cf1a39d4.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "感伤、思念、抒情、深情、回忆",
-                "timbre": "柔和、明亮、清脆、清新",
-                "instruments": "钢琴",
-                "scenarios": "在餐厅、咖啡厅等场合播放",
-                "style": "轻松愉悦",
-                "style_tag": "温馨浪漫",
-                "summary": "4/4拍；乐器：钢琴；情感：感伤、思念、抒情、深情、回忆；场景：在餐厅、咖啡厅等场合播放"
-            }
-        },
-        "f0d6175e6f98dd0a9a22946672f57c6e.mp3": {
-            "file_path": "..\\..\\bgm\\all\\f0d6175e6f98dd0a9a22946672f57c6e.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "温暖",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、小提琴",
-                "scenarios": "电影、电视剧、广告",
-                "style": "舒缓优美",
-                "style_tag": "温馨浪漫",
-                "summary": "4/4拍；乐器：钢琴、小提琴；情感：温暖；场景：电影、电视剧、广告"
-            }
-        },
-        "e5342bd0251db1d31399fbcbc770ab97.mp3": {
-            "file_path": "..\\..\\bgm\\all\\e5342bd0251db1d31399fbcbc770ab97.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "感伤、舒适、抒情、深情、回忆",
-                "timbre": "柔和、温暖",
-                "instruments": "吉他",
-                "scenarios": "电影、电视剧、广告、品牌",
-                "style": "民谣",
-                "style_tag": "温馨浪漫",
-                "summary": "4/4拍；乐器：吉他；情感：感伤、舒适、抒情、深情、回忆；场景：电影、电视剧、广告、品牌"
-            }
-        }
+    "0d953a14e442bae981fad536a3ac702c.mp3": {
+      "file_path": "0d953a14e442bae981fad536a3ac702c.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动柔和。",
+        "emotion": "深情、平静、坚定、力量。",
+        "timbre": "优美、柔和、温暖。",
+        "instruments": "钢琴。",
+        "scenarios": "情感表达，爱情亲情，影视配乐，广告MV。",
+        "style": "梦幻空灵",
+        "style_tag": "舒缓优美",
+        "summary": "柔和温暖的中速钢琴曲，情感由平静转为坚定，适合表达深情的影视及广告场景。"
+      }
     },
-    "民族古风": {
-        "0fc60abde8dae1d1007da4dba8132247.mp3": {
-            "file_path": "..\\..\\bgm\\all\\0fc60abde8dae1d1007da4dba8132247.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "愉悦",
-                "timbre": "柔和",
-                "instruments": "古筝、琵琶",
-                "scenarios": "游戏",
-                "style": "民族古风",
-                "style_tag": "民族古风",
-                "summary": "4/4拍；乐器：古筝、琵琶；情感：愉悦；场景：游戏"
-            }
-        },
-        "63ec363be59b568502364123f9abb033.mp3": {
-            "file_path": "..\\..\\bgm\\all\\63ec363be59b568502364123f9abb033.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "欢快、愉悦",
-                "timbre": "柔和、温暖、明亮、清脆、细腻",
-                "instruments": "二胡、古筝、琵琶",
-                "scenarios": "游戏、动画、短视频",
-                "style": "民族古风",
-                "style_tag": "民族古风",
-                "summary": "4/4拍；乐器：二胡、古筝、琵琶；情感：欢快、愉悦；场景：游戏、动画、短视频"
-            }
-        },
-        "b3c765100dd5fb4c88b4267cdc5d52ef.mp3": {
-            "file_path": "..\\..\\bgm\\all\\b3c765100dd5fb4c88b4267cdc5d52ef.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "幸福、快乐、欢快、愉悦、积极",
-                "timbre": "柔和",
-                "instruments": "钢琴、鼓",
-                "scenarios": "电影、游戏",
-                "style": "中国传统",
-                "style_tag": "民族古风",
-                "summary": "4/4拍；乐器：钢琴、鼓；情感：幸福、快乐、欢快、愉悦、积极；场景：电影、游戏"
-            }
-        },
-        "bd732b87aed3a6d5afc17709ea526b7b.mp3": {
-            "file_path": "..\\..\\bgm\\all\\bd732b87aed3a6d5afc17709ea526b7b.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "深沉、安慰、抒情、坚定、梦幻",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、二胡、古筝",
-                "scenarios": "电影、电视剧、广告、游戏",
-                "style": "古典",
-                "style_tag": "民族古风",
-                "summary": "4/4拍；乐器：钢琴、二胡、古筝；情感：深沉、安慰、抒情、坚定、梦幻；场景：电影、电视剧、广告、游戏"
-            }
-        }
+    "2c131ade446e69d3e1ad9a004451f3d0.mp3": {
+      "file_path": "2c131ade446e69d3e1ad9a004451f3d0.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动明显，旋律优美。",
+        "emotion": "忧伤、深情、思考。",
+        "timbre": "明亮、柔和、温暖、清脆。",
+        "instruments": "钢琴，小提琴。",
+        "scenarios": "情感表达，温馨治愈，婚礼庆典，影视纪录片。",
+        "style": "浪漫抒情",
+        "style_tag": "舒缓优美",
+        "summary": "由钢琴与小提琴演奏的慢速乐曲，音色明亮温暖，旋律悠扬深情，适合营造温馨和平的氛围。"
+      }
     },
-    "轻松愉悦": {
-        "19f3286eeee822b48dd20fbe838c31eb.mp3": {
-            "file_path": "..\\..\\bgm\\all\\19f3286eeee822b48dd20fbe838c31eb.mp3",
-            "analysis": {
-                "rhythm": "律动",
-                "emotion": "平静、放松、舒适",
-                "timbre": "柔和、温暖、清脆",
-                "instruments": "吉他、鼓",
-                "scenarios": "电影、电视剧、广告",
-                "style": "梦幻空灵",
-                "style_tag": "轻松愉悦",
-                "summary": "律动；乐器：吉他、鼓；情感：平静、放松、舒适；场景：电影、电视剧、广告"
-            }
-        },
-        "37935dc911a8866372654fd7aead5078.mp3": {
-            "file_path": "..\\..\\bgm\\all\\37935dc911a8866372654fd7aead5078.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "温暖、快乐、愉悦、积极",
-                "timbre": "柔和、温暖、明亮、清脆、清新",
-                "instruments": "钢琴、吉他",
-                "scenarios": "电影、电视剧、广告、婚礼、毕业典礼、品牌",
-                "style": "梦幻空灵",
-                "style_tag": "轻松愉悦",
-                "summary": "4/4拍；乐器：钢琴、吉他；情感：温暖、快乐、愉悦、积极；场景：电影、电视剧、广告、婚礼、毕业典礼、品牌"
-            }
-        },
-        "4d3b4fb1eae2579445b9e09fd18dee93.mp3": {
-            "file_path": "..\\..\\bgm\\all\\4d3b4fb1eae2579445b9e09fd18dee93.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "放松、舒适、愉悦",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、贝斯、鼓",
-                "scenarios": "电影、电视剧、广告",
-                "style": "轻松愉悦",
-                "style_tag": "轻松愉悦",
-                "summary": "4/4拍；乐器：钢琴、贝斯、鼓；情感：放松、舒适、愉悦；场景：电影、电视剧、广告"
-            }
-        },
-        "8180d37c567e09fa9b738a4a46cbae03.mp3": {
-            "file_path": "..\\..\\bgm\\all\\8180d37c567e09fa9b738a4a46cbae03.mp3",
-            "analysis": {
-                "rhythm": "这是一首优美的、具有优美旋律的乐曲",
-                "emotion": "愉悦",
-                "timbre": "柔和、温暖、明亮、清新",
-                "instruments": "钢琴、吉他、人声",
-                "scenarios": "情感、温柔、感人的场景",
-                "style": "浪漫",
-                "style_tag": "轻松愉悦",
-                "summary": "这是一首优美的、具有优美旋律的乐曲；乐器：钢琴、吉他、人声；情感：愉悦；场景：情感、温柔、感人的场景"
-            }
-        },
-        "8e7fcac87d9582cc2f216c128012d1fe.mp3": {
-            "file_path": "..\\..\\bgm\\all\\8e7fcac87d9582cc2f216c128012d1fe.mp3",
-            "analysis": {
-                "rhythm": "轻快",
-                "emotion": "愉悦",
-                "timbre": "柔和、明亮、清脆",
-                "instruments": "钢琴、吉他、合成器",
-                "scenarios": "教育、科技",
-                "style": "轻松愉悦",
-                "style_tag": "轻松愉悦",
-                "summary": "轻快；乐器：钢琴、吉他、合成器；情感：愉悦；场景：教育、科技"
-            }
-        },
-        "a5488223744fdd4670f3c8b5cfe9be1a.mp3": {
-            "file_path": "..\\..\\bgm\\all\\a5488223744fdd4670f3c8b5cfe9be1a.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "幸福、快乐、欢快、愉悦",
-                "timbre": "柔和、温暖、明亮",
-                "instruments": "钢琴、吉他、长笛",
-                "scenarios": "游戏、动画、儿童",
-                "style": "梦幻空灵",
-                "style_tag": "轻松愉悦",
-                "summary": "4/4拍；乐器：钢琴、吉他、长笛；情感：幸福、快乐、欢快、愉悦；场景：游戏、动画、儿童"
-            }
-        },
-        "ab127499ad229862878df2efbe3aff31.mp3": {
-            "file_path": "..\\..\\bgm\\all\\ab127499ad229862878df2efbe3aff31.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "平静、愉悦",
-                "timbre": "柔和、明亮、清新",
-                "instruments": "钢琴、吉他、鼓、合成器",
-                "scenarios": "电影、电视剧、广告、庆祝",
-                "style": "轻松愉悦",
-                "style_tag": "轻松愉悦",
-                "summary": "4/4拍；乐器：钢琴、吉他、鼓、合成器；情感：平静、愉悦；场景：电影、电视剧、广告、庆祝"
-            }
-        },
-        "c675719ad5fc28ff5efdbe4edf8c2da6.mp3": {
-            "file_path": "..\\..\\bgm\\all\\c675719ad5fc28ff5efdbe4edf8c2da6.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "放松、愉悦",
-                "timbre": "柔和、温暖、明亮",
-                "instruments": "钢琴、吉他、鼓、合成器",
-                "scenarios": "电影、电视剧、广告、企业宣传、演讲、教育、培训、短视频",
-                "style": "梦幻空灵",
-                "style_tag": "轻松愉悦",
-                "summary": "4/4拍；乐器：钢琴、吉他、鼓、合成器；情感：放松、愉悦；场景：电影、电视剧、广告、企业宣传、演讲、教育、培训、短视频"
-            }
-        },
-        "e44793463d5572d4aa04e0368066a4db.mp3": {
-            "file_path": "..\\..\\bgm\\all\\e44793463d5572d4aa04e0368066a4db.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "温馨、平静、安宁",
-                "timbre": "柔和、温暖、明亮、清脆",
-                "instruments": "钢琴、吉他、鼓",
-                "scenarios": "广告、教育、科技",
-                "style": "氛围轻快",
-                "style_tag": "轻松愉悦",
-                "summary": "4/4拍；乐器：钢琴、吉他、鼓；情感：温馨、平静、安宁；场景：广告、教育、科技"
-            }
-        }
+    "4a890021a08f3741e5523a863fab5a78.mp3": {
+      "file_path": "4a890021a08f3741e5523a863fab5a78.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，带律动感。",
+        "emotion": "思考、沉静、微忧郁、深情。",
+        "timbre": "明亮、清脆、柔和、温暖。",
+        "instruments": "钢琴。",
+        "scenarios": "情感爱情，温馨治愈，影视广告，游戏动画。",
+        "style": "浪漫",
+        "style_tag": "舒缓优美",
+        "summary": "清新明快的慢速钢琴曲，音色柔和，充满希望与思考，适合展现人物内心成长与情感变化。"
+      }
     },
-    "低沉忧郁": {
-        "096653bddbc03e9f2fee2b0772d47101.mp3": {
-            "file_path": "..\\..\\bgm\\all\\096653bddbc03e9f2fee2b0772d47101.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "感伤、深沉、抒情",
-                "timbre": "柔和、明亮、清新",
-                "instruments": "钢琴",
-                "scenarios": "电影、电视剧、纪录片、广告、纪录",
-                "style": "古典",
-                "style_tag": "低沉忧郁",
-                "summary": "4/4拍；乐器：钢琴；情感：感伤、深沉、抒情；场景：电影、电视剧、纪录片、广告、纪录"
-            }
-        },
-        "156d92f8f33c15301423b93ef68d5a9e.mp3": {
-            "file_path": "..\\..\\bgm\\all\\156d92f8f33c15301423b93ef68d5a9e.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "忧伤、感伤、深沉、安慰",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、长笛",
-                "scenarios": "电影、电视剧、纪录片、广告、旅游、纪录",
-                "style": "低沉忧郁",
-                "style_tag": "低沉忧郁",
-                "summary": "4/4拍；乐器：钢琴、长笛；情感：忧伤、感伤、深沉、安慰；场景：电影、电视剧、纪录片、广告、旅游、纪录"
-            }
-        },
-        "477b3e20ffe9815997541db8705c4a54.mp3": {
-            "file_path": "..\\..\\bgm\\all\\477b3e20ffe9815997541db8705c4a54.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "忧伤、治愈、安慰、平静、抒情",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、吉他、鼓",
-                "scenarios": "电影、电视剧、广告",
-                "style": "轻松愉悦",
-                "style_tag": "低沉忧郁",
-                "summary": "4/4拍；乐器：钢琴、吉他、鼓；情感：忧伤、治愈、安慰、平静、抒情；场景：电影、电视剧、广告"
-            }
-        },
-        "77205c293da6db39d6d5cb59edde8972.mp3": {
-            "file_path": "..\\..\\bgm\\all\\77205c293da6db39d6d5cb59edde8972.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "忧伤、深沉、思考、回忆",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、大提琴",
-                "scenarios": "电影、电视剧、咖啡馆、图书馆",
-                "style": "梦幻空灵",
-                "style_tag": "低沉忧郁",
-                "summary": "4/4拍；乐器：钢琴、大提琴；情感：忧伤、深沉、思考、回忆；场景：电影、电视剧、咖啡馆、图书馆"
-            }
-        },
-        "b2f228d37279f8ae2f6066718ed6b32f.mp3": {
-            "file_path": "..\\..\\bgm\\all\\b2f228d37279f8ae2f6066718ed6b32f.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "忧伤、感伤、悲伤、深沉、深情",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、小提琴",
-                "scenarios": "MV",
-                "style": "氛围",
-                "style_tag": "低沉忧郁",
-                "summary": "4/4拍；乐器：钢琴、小提琴；情感：忧伤、感伤、悲伤、深沉、深情；场景：MV"
-            }
-        },
-        "c0545c3db6751eeaece8112a11382db0.mp3": {
-            "file_path": "..\\..\\bgm\\all\\c0545c3db6751eeaece8112a11382db0.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "忧伤、失落、沉重、压抑、深沉",
-                "timbre": "温暖、明亮、清脆、清新",
-                "instruments": "吉他",
-                "scenarios": "电影、电视剧",
-                "style": "民谣",
-                "style_tag": "低沉忧郁",
-                "summary": "4/4拍；乐器：吉他；情感：忧伤、失落、沉重、压抑、深沉；场景：电影、电视剧"
-            }
-        },
-        "da39572afd0e139e89e522d9b69f0923.mp3": {
-            "file_path": "..\\..\\bgm\\all\\da39572afd0e139e89e522d9b69f0923.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "忧伤、深沉、抒情",
-                "timbre": "柔和、温暖、清脆",
-                "instruments": "钢琴、二胡",
-                "scenarios": "电影、电视剧、展览、画展",
-                "style": "民族古风",
-                "style_tag": "低沉忧郁",
-                "summary": "4/4拍；乐器：钢琴、二胡；情感：忧伤、深沉、抒情；场景：电影、电视剧、展览、画展"
-            }
-        }
+    "4c339799d5079214b9b1797e2c139178.mp3": {
+      "file_path": "4c339799d5079214b9b1797e2c139178.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动柔和。",
+        "emotion": "感伤、思念、深沉。",
+        "timbre": "柔和、舒适、宁静。",
+        "instruments": "钢琴。",
+        "scenarios": "感人影视，纪录片，高端广告。",
+        "style": "新古典",
+        "style_tag": "舒缓优美",
+        "summary": "柔和慢速的钢琴独奏，情感深沉感伤，适合用于纪录片、高端广告及情感丰富的影视作品。"
+      }
     },
-    "活泼欢快": {
-        "4e6976bc4aaacf27d6f89767c3aaf63e.mp3": {
-            "file_path": "..\\..\\bgm\\all\\4e6976bc4aaacf27d6f89767c3aaf63e.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "希望、快乐、欢快、愉悦",
-                "timbre": "柔和、温暖、明亮",
-                "instruments": "钢琴、吉他、合成器、人声",
-                "scenarios": "广告、企业宣传、商业活动、演讲、教育、培训、科技、创业",
-                "style": "现代都市",
-                "style_tag": "活泼欢快",
-                "summary": "4/4拍；乐器：钢琴、吉他、合成器、人声；情感：希望、快乐、欢快、愉悦；场景：广告、企业宣传、商业活动、演讲、教育、培训、科技、创业"
-            }
-        },
-        "5379044fc5953b9129d75e07058a0d24.mp3": {
-            "file_path": "..\\..\\bgm\\all\\5379044fc5953b9129d75e07058a0d24.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "希望、快乐、欢快、愉悦、活力、正能量",
-                "timbre": "柔和、温暖、明亮、清脆",
-                "instruments": "钢琴、吉他、电吉他、贝斯、鼓",
-                "scenarios": "广告、企业宣传、商业活动、科技、创业",
-                "style": "现代都市",
-                "style_tag": "活泼欢快",
-                "summary": "4/4拍；乐器：钢琴、吉他、电吉他、贝斯、鼓；情感：希望、快乐、欢快、愉悦、活力、正能量；场景：广告、企业宣传、商业活动、科技、创业"
-            }
-        },
-        "57cdc9f6b763199dc0e40bc209c91226.mp3": {
-            "file_path": "..\\..\\bgm\\all\\57cdc9f6b763199dc0e40bc209c91226.mp3",
-            "analysis": {
-                "rhythm": "快速",
-                "emotion": "幸福、快乐",
-                "timbre": "柔和、温暖、明亮、清脆",
-                "instruments": "打击乐、人声、木琴",
-                "scenarios": "广告、企业宣传、教育、儿童",
-                "style": "轻松愉悦",
-                "style_tag": "活泼欢快",
-                "summary": "快速；乐器：打击乐、人声、木琴；情感：幸福、快乐；场景：广告、企业宣传、教育、儿童"
-            }
-        },
-        "90410dc9dc7946e63774ea33f428277e.mp3": {
-            "file_path": "..\\..\\bgm\\all\\90410dc9dc7946e63774ea33f428277e.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "平静",
-                "timbre": "明亮、清脆",
-                "instruments": "钢琴、鼓、铙钹",
-                "scenarios": "电影、游戏、体育、比赛",
-                "style": "梦幻空灵",
-                "style_tag": "活泼欢快",
-                "summary": "4/4拍；乐器：钢琴、鼓、铙钹；情感：平静；场景：电影、游戏、体育、比赛"
-            }
-        }
+    "524497676191dc2991c23a40bdeecc74.mp3": {
+      "file_path": "524497676191dc2991c23a40bdeecc74.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍。",
+        "emotion": "热爱生活、憧憬未来、抒情。",
+        "timbre": "明亮、清新、愉悦、活力。",
+        "instruments": "钢琴。",
+        "scenarios": "广告影视，新闻报道，演讲会议。",
+        "style": "轻音乐",
+        "style_tag": "舒缓优美",
+        "summary": "音色明亮的中速钢琴曲，旋律悠扬欢快，充满活力与憧憬，适合各类商业及影视作品。"
+      }
     },
-    "激情澎湃": {
-        "518e4f2dde2a51e132b375d9cbd8bb83.mp3": {
-            "file_path": "..\\..\\bgm\\all\\518e4f2dde2a51e132b375d9cbd8bb83.mp3",
-            "analysis": {
-                "rhythm": "4/4拍",
-                "emotion": "安慰、平静、希望、坚定",
-                "timbre": "柔和、温暖",
-                "instruments": "钢琴、小提琴",
-                "scenarios": "电影、电视剧、广告、新闻、品牌",
-                "style": "舒缓优美",
-                "style_tag": "激情澎湃",
-                "summary": "4/4拍；乐器：钢琴、小提琴；情感：安慰、平静、希望、坚定；场景：电影、电视剧、广告、新闻、品牌"
-            }
-        }
+    "67e531b4ac238df8896949bb6e5997f9.mp3": {
+      "file_path": "67e531b4ac238df8896949bb6e5997f9.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动明显。",
+        "emotion": "思考、回忆、怀念、感慨。",
+        "timbre": "柔和、温暖、清脆、甜美。",
+        "instruments": "钢琴。",
+        "scenarios": "影视配乐，商业广告，诗歌散文朗诵。",
+        "style": "梦幻空灵",
+        "style_tag": "舒缓优美",
+        "summary": "柔和温馨的慢速钢琴曲，音色清脆甜美，充满怀旧与思考的情感，适合影视及文艺作品。"
+      }
+    },
+    "717bc081487c7c5974c906431a31bfb4.mp3": {
+      "file_path": "717bc081487c7c5974c906431a31bfb4.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动明显。",
+        "emotion": "抒情、深沉、沧桑、思考。",
+        "timbre": "柔和、温暖、平静。",
+        "instruments": "钢琴。",
+        "scenarios": "影视配乐，商业广告，婚礼典礼。",
+        "style": "抒情",
+        "style_tag": "舒缓优美",
+        "summary": "抒情且略带沧桑的慢速钢琴曲，音色柔和温暖，适合表达深沉情感的文艺作品及商业广告。"
+      }
+    },
+    "8dad506d4ad1a60245921e3e4c85b137.mp3": {
+      "file_path": "8dad506d4ad1a60245921e3e4c85b137.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，平静。",
+        "emotion": "深沉、感人、柔和。",
+        "timbre": "柔和、舒适、温暖。",
+        "instruments": "钢琴。",
+        "scenarios": "情感表达，爱情亲情，温馨浪漫。",
+        "style": "梦幻空灵",
+        "style_tag": "舒缓优美",
+        "summary": "柔和舒适的慢速钢琴曲，旋律深沉感人，营造温馨浪漫氛围，适合表达深切情感。"
+      }
+    },
+    "912fa6038664e1f281852d3924b9045e.mp3": {
+      "file_path": "912fa6038664e1f281852d3924b9045e.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，平静。",
+        "emotion": "深情、优美、陶醉。",
+        "timbre": "柔和、温暖、清脆、略带感伤。",
+        "instruments": "钢琴。",
+        "scenarios": "文艺影视，广告宣传，婚礼庆典。",
+        "style": "浪漫",
+        "style_tag": "舒缓优美",
+        "summary": "旋律深情的慢速钢琴曲，音色柔和温暖，能带来心灵抚慰，适合婚礼、广告及文艺作品。"
+      }
+    },
+    "91ab2d2b0c7a63eb94163d3047745c8c.mp3": {
+      "file_path": "91ab2d2b0c7a63eb94163d3047745c8c.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍。",
+        "emotion": "温馨、感伤、愉悦、快乐。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "钢琴，小提琴。",
+        "scenarios": "情感表达，广告宣传，婚礼庆祝，儿童影视。",
+        "style": "浪漫",
+        "style_tag": "舒缓优美",
+        "summary": "以钢琴和小提琴为主的慢速乐曲，融合温馨感伤与愉悦，适合情感表达及温馨场合。"
+      }
+    },
+    "a660c55265f15eada1085b9ca91a84ed.mp3": {
+      "file_path": "a660c55265f15eada1085b9ca91a84ed.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，抒情。",
+        "emotion": "深情、优美、思考、交流。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "钢琴。",
+        "scenarios": "情感电影，商业广告，新闻报道。",
+        "style": "抒情",
+        "style_tag": "舒缓优美",
+        "summary": "柔和优美的中速钢琴曲，表达内心深处的深情与思考，适合情感电影及高端商业广告。"
+      }
+    },
+    "b9f1ea24b572b1d58587eb925d32f2fa.mp3": {
+      "file_path": "b9f1ea24b572b1d58587eb925d32f2fa.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，冷静。",
+        "emotion": "深沉、柔和、微忧郁、平静。",
+        "timbre": "明亮、柔和、纯净、清脆。",
+        "instruments": "钢琴。",
+        "scenarios": "影视配乐，婚礼典礼，电台广播。",
+        "style": "浪漫",
+        "style_tag": "舒缓优美",
+        "summary": "精致流畅的慢速钢琴曲，音色明亮柔和，情感深沉平静，适合温馨感人的影视及典礼场景。"
+      }
+    },
+    "c6cb32c1bc373e9e84c6e6ce085fb055.mp3": {
+      "file_path": "c6cb32c1bc373e9e84c6e6ce085fb055.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，柔和律动。",
+        "emotion": "优美、柔和、怀念、憧憬。",
+        "timbre": "温暖、明亮、轻快。",
+        "instruments": "吉他，钢琴，合成器。",
+        "scenarios": "温馨影视，正能量激励，平静祥和场景。",
+        "style": "轻松愉悦",
+        "style_tag": "舒缓优美",
+        "summary": "融合吉他与钢琴的中速乐曲，氛围平静温馨，充满希望与正能量，适合烘托情感与激励场景。"
+      }
+    },
+    "d159ce12bbfe24b8d26443ae0824f517.mp3": {
+      "file_path": "d159ce12bbfe24b8d26443ae0824f517.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动柔和。",
+        "emotion": "舒适、柔和、放松、温暖。",
+        "timbre": "温暖、清脆、明亮。",
+        "instruments": "吉他，钢琴，小提琴。",
+        "scenarios": "情感表达，生活场景，文艺电影。",
+        "style": "新奇喜剧",
+        "style_tag": "舒缓优美",
+        "summary": "由吉他、钢琴和小提琴交织而成的中速乐曲，音色温暖明亮，营造舒适放松的氛围。"
+      }
+    },
+    "d7656cb980787356f733a997041c58a5.mp3": {
+      "file_path": "d7656cb980787356f733a997041c58a5.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动柔和。",
+        "emotion": "思念、期待、缠绵、幸福。",
+        "timbre": "柔和、温暖、清脆、明亮。",
+        "instruments": "钢琴。",
+        "scenarios": "文艺作品，高端广告，婚礼典礼。",
+        "style": "浪漫",
+        "style_tag": "舒缓优美",
+        "summary": "清脆明亮的中速钢琴曲，旋律缠绵深情，营造宁静幸福氛围，适合文艺作品与高端场合。"
+      }
+    },
+    "d77a622e6c4d682bd8981a304dcdf1e7.mp3": {
+      "file_path": "d77a622e6c4d682bd8981a304dcdf1e7.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动感。",
+        "emotion": "柔和、舒适、温馨、感恩。",
+        "timbre": "温暖、清脆、柔和、甜美。",
+        "instruments": "钢琴。",
+        "scenarios": "情感表达，影视配乐，广告宣传。",
+        "style": "梦幻甜美",
+        "style_tag": "舒缓优美",
+        "summary": "温暖清脆的中速钢琴曲，旋律悠扬，充满对生活的热爱，适合温馨情感表达及广告配乐。"
+      }
+    },
+    "db5d37a7eef0f01c8e838aca56e7355b.mp3": {
+      "file_path": "db5d37a7eef0f01c8e838aca56e7355b.mp3",
+      "analysis": {
+        "rhythm": "中速，旋律优美。",
+        "emotion": "深情、清新、自然、宁静。",
+        "timbre": "柔和、温暖、阳光。",
+        "instruments": "钢琴，小提琴。",
+        "scenarios": "情感表达，悲伤氛围，慢镜头配乐。",
+        "style": "梦幻空灵",
+        "style_tag": "舒缓优美",
+        "summary": "优美深情的钢琴曲，辅以小提琴，音色温暖柔和，适合表达深刻情感或悲伤宁静的场景。"
+      }
+    },
+    "e6007f68d53c0928083a87bc034dd685.mp3": {
+      "file_path": "e6007f68d53c0928083a87bc034dd685.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动柔和。",
+        "emotion": "深沉、思考、沉静、温暖。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "钢琴。",
+        "scenarios": "情感影视，广告宣传，文艺作品。",
+        "style": "舒缓优美",
+        "style_tag": "舒缓优美",
+        "summary": "柔和温暖的慢速钢琴曲，情感深沉而宁静，适合需要抒发情感与思考的影视及文艺作品。"
+      }
+    },
+    "edc07fe9a29cbe1192f0e06cbb79dffa.mp3": {
+      "file_path": "edc07fe9a29cbe1192f0e06cbb79dffa.mp3",
+      "analysis": {
+        "rhythm": "Pop风格，节奏稳重。",
+        "emotion": "抒情、深沉、希望、平和。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "钢琴。",
+        "scenarios": "情感表达，广告宣传，文艺作品。",
+        "style": "梦幻空灵",
+        "style_tag": "舒缓优美",
+        "summary": "抒情稳重的钢琴曲，音色柔和温暖，传达深沉与希望，适合情感表达与文艺宣传。"
+      }
+    },
+    "f578814553b8eaf8c1ccca8c9c71e134.mp3": {
+      "file_path": "f578814553b8eaf8c1ccca8c9c71e134.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动感强。",
+        "emotion": "深情、感动、温馨、舒适。",
+        "timbre": "柔和、温暖、平静。",
+        "instruments": "钢琴。",
+        "scenarios": "影视配乐，悲伤感动，广告宣传。",
+        "style": "浪漫",
+        "style_tag": "舒缓优美",
+        "summary": "深情优美的慢速钢琴曲，音色柔和温暖，适合表现悲伤、感动及孤独等情感场景。"
+      }
     }
+  },
+  "温馨浪漫": {
+    "1371dedeea44a71fbc9578851b207427.mp3": {
+      "file_path": "1371dedeea44a71fbc9578851b207427.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，抒情，律动明显。",
+        "emotion": "浪漫、爱意、沉静、平静。",
+        "timbre": "柔和、温暖、清澈、明亮。",
+        "instruments": "钢琴。",
+        "scenarios": "影视配乐，商业广告，演讲会议。",
+        "style": "浪漫",
+        "style_tag": "温馨浪漫",
+        "summary": "中速抒情钢琴曲，旋律优美温暖，充满浪漫爱意，适合情感影视及商业活动。"
+      }
+    },
+    "6150b9279991a52a416f6d325be316cf.mp3": {
+      "file_path": "6150b9279991a52a416f6d325be316cf.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动感强。",
+        "emotion": "温暖、舒适、平静、柔和。",
+        "timbre": "柔和、明亮、愉悦。",
+        "instruments": "吉他，钢琴，小提琴。",
+        "scenarios": "情感回忆，治愈系，生活旅行。",
+        "style": "新奇喜剧",
+        "style_tag": "温馨浪漫",
+        "summary": "吉他、钢琴与小提琴合奏，中速节奏，音色柔和明亮，适合营造温暖舒适与轻松愉悦的氛围。"
+      }
+    },
+    "8c1dab0309843f995d3f91b7cf1a39d4.mp3": {
+      "file_path": "8c1dab0309843f995d3f91b7cf1a39d4.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍。",
+        "emotion": "深情、感伤、思念、平静。",
+        "timbre": "古典气质、清脆明亮、柔和。",
+        "instruments": "钢琴。",
+        "scenarios": "餐厅咖啡厅，影视配乐，个人聆听。",
+        "style": "轻松愉悦",
+        "style_tag": "温馨浪漫",
+        "summary": "带有古典气质的慢速钢琴曲，情感深情且略带感伤，适合营造浪漫氛围或表达回忆。"
+      }
+    },
+    "f0d6175e6f98dd0a9a22946672f57c6e.mp3": {
+      "file_path": "f0d6175e6f98dd0a9a22946672f57c6e.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动感强。",
+        "emotion": "优美、柔和、深情、温馨。",
+        "timbre": "柔和、温暖、平静、舒适。",
+        "instruments": "钢琴，小提琴。",
+        "scenarios": "广告，电影，电视剧，情感表达。",
+        "style": "舒缓优美",
+        "style_tag": "温馨浪漫",
+        "summary": "旋律优美的钢琴与小提琴协奏，情感深情温馨，适合表达浪漫与感动的场景。"
+      }
+    },
+    "e5342bd0251db1d31399fbcbc770ab97.mp3": {
+      "file_path": "e5342bd0251db1d31399fbcbc770ab97.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动感强。",
+        "emotion": "柔和、抒情、深情、微感伤。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "吉他。",
+        "scenarios": "情感表达，影视配乐，商业宣传。",
+        "style": "民谣",
+        "style_tag": "温馨浪漫",
+        "summary": "柔和舒适的中速吉他民谣，旋律简洁优美，适合表达亲情、爱情及温馨浪漫的主题。"
+      }
+    }
+  },
+  "民族古风": {
+    "0fc60abde8dae1d1007da4dba8132247.mp3": {
+      "file_path": "0fc60abde8dae1d1007da4dba8132247.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动明显。",
+        "emotion": "祥和、愉悦、安逸、庄重。",
+        "timbre": "东方韵味、柔和、古老。",
+        "instruments": "古筝，琵琶，二胡。",
+        "scenarios": "古风武侠，离别思念，古代宫廷。",
+        "style": "世界音乐",
+        "style_tag": "民族古风",
+        "summary": "以古筝和琵琶为主的传统乐曲，氛围祥和神秘，适合古风、武侠及历史文化场景。"
+      }
+    },
+    "63ec363be59b568502364123f9abb033.mp3": {
+      "file_path": "63ec363be59b568502364123f9abb033.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍。",
+        "emotion": "愉悦、庆祝、祥和、轻松。",
+        "timbre": "古风、明亮、柔和、温暖。",
+        "instruments": "古筝，二胡，琵琶，笛子。",
+        "scenarios": "旅行美食，古风影视，游戏动画。",
+        "style": "中国传统",
+        "style_tag": "民族古风",
+        "summary": "欢快祥和的中速民乐，融合古筝、二胡与笛子，适合节日庆祝、古风影视及轻松愉悦的场景。"
+      }
+    },
+    "b3c765100dd5fb4c88b4267cdc5d52ef.mp3": {
+      "file_path": "b3c765100dd5fb4c88b4267cdc5d52ef.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，稳定。",
+        "emotion": "欢快、积极、庄重、平静。",
+        "timbre": "优美、柔和、丰富。",
+        "instruments": "钢琴，鼓，古筝，二胡。",
+        "scenarios": "古风游戏，文艺电影，民族音乐展示。",
+        "style": "中国传统",
+        "style_tag": "民族古风",
+        "summary": "结合钢琴与民族乐器的慢速乐曲，节奏庄重而欢快，适合古风游戏及展现民族文化。"
+      }
+    },
+    "bd732b87aed3a6d5afc17709ea526b7b.mp3": {
+      "file_path": "bd732b87aed3a6d5afc17709ea526b7b.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动感明显。",
+        "emotion": "抒情、深沉、梦幻、坚定。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "古筝，钢琴，二胡。",
+        "scenarios": "广告，影视，游戏，情感表达。",
+        "style": "古典",
+        "style_tag": "民族古风",
+        "summary": "古筝与钢琴交织的中速乐曲，情感深沉且坚定，充满东方韵味，适合情感丰富的影视与广告。"
+      }
+    }
+  },
+  "轻松愉悦": {
+    "19f3286eeee822b48dd20fbe838c31eb.mp3": {
+      "file_path": "19f3286eeee822b48dd20fbe838c31eb.mp3",
+      "analysis": {
+        "rhythm": "中速嘻哈，律动感。",
+        "emotion": "淡然、平静、放松、抚慰。",
+        "timbre": "柔和、温暖、清脆。",
+        "instruments": "鼓，吉他。",
+        "scenarios": "轻松愉快，广告影视，缓解焦虑。",
+        "style": "梦幻空灵",
+        "style_tag": "轻松愉悦",
+        "summary": "中速嘻哈风格乐曲，音色柔和温暖，氛围轻松舒适，适合广告配乐及放松身心。"
+      }
+    },
+    "37935dc911a8866372654fd7aead5078.mp3": {
+      "file_path": "37935dc911a8866372654fd7aead5078.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，节奏鲜明。",
+        "emotion": "欢快、积极、纯真、幸福。",
+        "timbre": "清脆、明亮、温暖、清新。",
+        "instruments": "钢琴，吉他。",
+        "scenarios": "影视广告，婚礼庆典，商业宣传。",
+        "style": "梦幻空灵",
+        "style_tag": "轻松愉悦",
+        "summary": "充满童真与幸福感的中速乐曲，钢琴与吉他搭配，氛围积极欢快，适合儿童节目及商业宣传。"
+      }
+    },
+    "4d3b4fb1eae2579445b9e09fd18dee93.mp3": {
+      "file_path": "4d3b4fb1eae2579445b9e09fd18dee93.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，轻快，律动强。",
+        "emotion": "轻松、愉悦、舒适、希望。",
+        "timbre": "柔和、温暖、宁静。",
+        "instruments": "钢琴，鼓，贝斯。",
+        "scenarios": "广告影视，休闲场所，商业宣传。",
+        "style": "轻松愉悦",
+        "style_tag": "轻松愉悦",
+        "summary": "轻快柔和的中速乐曲，使用钢琴、鼓和贝斯，营造舒适放松的氛围，适合商业广告及休闲场景。"
+      }
+    },
+    "8180d37c567e09fa9b738a4a46cbae03.mp3": {
+      "file_path": "8180d37c567e09fa9b738a4a46cbae03.mp3",
+      "analysis": {
+        "rhythm": "旋律优美。",
+        "emotion": "愉悦、轻松、温馨。",
+        "timbre": "明亮、柔和、清新、温暖。",
+        "instruments": "吉他，钢琴，人声。",
+        "scenarios": "情感治愈，亲情爱情，旅行聚会。",
+        "style": "浪漫",
+        "style_tag": "轻松愉悦",
+        "summary": "明亮柔和的轻快乐曲，融合人声与吉他，氛围愉悦治愈，适合表达情感及轻松聚会。"
+      }
+    },
+    "8e7fcac87d9582cc2f216c128012d1fe.mp3": {
+      "file_path": "8e7fcac87d9582cc2f216c128012d1fe.mp3",
+      "analysis": {
+        "rhythm": "中速，轻快明亮。",
+        "emotion": "轻松、愉悦、积极、创新。",
+        "timbre": "柔和、清脆、明亮、清新。",
+        "instruments": "木吉他，钢琴，合成器。",
+        "scenarios": "科技教育，企业宣传，提高效率。",
+        "style": "轻音乐",
+        "style_tag": "轻松愉悦",
+        "summary": "轻快积极的中速乐曲，充满正能量，适合科技创新、企业宣传及提升工作效率的场景。"
+      }
+    },
+    "a5488223744fdd4670f3c8b5cfe9be1a.mp3": {
+      "file_path": "a5488223744fdd4670f3c8b5cfe9be1a.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，稳定。",
+        "emotion": "快乐、幸福、欢快、愉悦。",
+        "timbre": "明亮、柔和、温暖。",
+        "instruments": "长笛，吉他，钢琴。",
+        "scenarios": "儿童动画游戏，派对亲子，教育学习。",
+        "style": "梦幻空灵",
+        "style_tag": "轻松愉悦",
+        "summary": "明亮温暖的慢速乐曲，充满欢乐童趣，适合儿童动画、游戏及亲子活动。"
+      }
+    },
+    "ab127499ad229862878df2efbe3aff31.mp3": {
+      "file_path": "ab127499ad229862878df2efbe3aff31.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动明显。",
+        "emotion": "轻松、愉悦、平静、舒适。",
+        "timbre": "明亮、柔和、清新。",
+        "instruments": "鼓，吉他，钢琴，合成器，木琴。",
+        "scenarios": "情感治愈，旅行聚会，冥想放松。",
+        "style": "轻音乐",
+        "style_tag": "轻松愉悦",
+        "summary": "音色清新明亮的中慢速乐曲，结合木琴与鼓点，氛围舒适治愈，适合放松、旅行及聚会。"
+      }
+    },
+    "c675719ad5fc28ff5efdbe4edf8c2da6.mp3": {
+      "file_path": "c675719ad5fc28ff5efdbe4edf8c2da6.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，节奏鲜明。",
+        "emotion": "愉悦、清新、柔和、优美。",
+        "timbre": "温暖、明亮、舒适。",
+        "instruments": "钢琴，吉他，鼓，合成器。",
+        "scenarios": "企业宣传，短视频娱乐，教育培训。",
+        "style": "梦幻空灵",
+        "style_tag": "轻松愉悦",
+        "summary": "动感清新的中速流行乐，融合吉他与钢琴，充满活力与希望，适合企业宣传及娱乐视频。"
+      }
+    },
+    "e44793463d5572d4aa04e0368066a4db.mp3": {
+      "file_path": "e44793463d5572d4aa04e0368066a4db.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，柔和律动。",
+        "emotion": "平静、温馨、愉悦、活泼。",
+        "timbre": "柔和、清脆、明亮、温暖。",
+        "instruments": "吉他，钢琴，鼓。",
+        "scenarios": "商业宣传，科技教育，提升情绪。",
+        "style": "氛围轻快",
+        "style_tag": "轻松愉悦",
+        "summary": "柔和明亮的中速乐曲，旋律轻快积极，适合商业宣传、教育推广及提升积极情绪。"
+      }
+    }
+  },
+  "低沉忧郁": {
+    "096653bddbc03e9f2fee2b0772d47101.mp3": {
+      "file_path": "096653bddbc03e9f2fee2b0772d47101.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动感强。",
+        "emotion": "深沉、感伤、忧郁、缠绵。",
+        "timbre": "古典、柔和、明亮。",
+        "instruments": "钢琴。",
+        "scenarios": "情感表达，悲伤孤独，冷静理性。",
+        "style": "古典风格",
+        "style_tag": "低沉忧郁",
+        "summary": "深沉优美的慢速钢琴曲，带有浓郁古典气质，适合表达悲伤、孤独及深厚情感的场景。"
+      }
+    },
+    "156d92f8f33c15301423b93ef68d5a9e.mp3": {
+      "file_path": "156d92f8f33c15301423b93ef68d5a9e.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，稳定。",
+        "emotion": "忧伤、深沉、安慰。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "钢琴，长笛，大提琴。",
+        "scenarios": "情感表达，悲伤忧郁，壮观场景。",
+        "style": "古典",
+        "style_tag": "低沉忧郁",
+        "summary": "忧伤深沉的慢速乐曲，融合钢琴与大提琴，音色温暖柔和，适合煽情及表达悲伤的场景。"
+      }
+    },
+    "477b3e20ffe9815997541db8705c4a54.mp3": {
+      "file_path": "477b3e20ffe9815997541db8705c4a54.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动柔和。",
+        "emotion": "忧伤、平静、安慰、治愈。",
+        "timbre": "柔和、温暖、安逸。",
+        "instruments": "吉他，鼓，钢琴。",
+        "scenarios": "影视广告，抒情歌曲，轻松场景。",
+        "style": "轻松愉悦",
+        "style_tag": "低沉忧郁",
+        "summary": "柔和温暖的慢速乐曲，情感由忧伤转为平静，具有治愈感，适合抒情及情感共鸣的场景。"
+      }
+    },
+    "77205c293da6db39d6d5cb59edde8972.mp3": {
+      "file_path": "77205c293da6db39d6d5cb59edde8972.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动柔和。",
+        "emotion": "忧伤、思考、深沉、舒缓。",
+        "timbre": "柔和、温暖、平静。",
+        "instruments": "钢琴，大提琴。",
+        "scenarios": "情感表达，孤独思念，安静高雅。",
+        "style": "梦幻空灵",
+        "style_tag": "低沉忧郁",
+        "summary": "意境深邃的慢速乐曲，钢琴与大提琴交织出忧伤与思考，适合表达孤独思念及营造高雅氛围。"
+      }
+    },
+    "b2f228d37279f8ae2f6066718ed6b32f.mp3": {
+      "file_path": "b2f228d37279f8ae2f6066718ed6b32f.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，带律动感。",
+        "emotion": "忧伤、深情、感伤。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "钢琴，小提琴。",
+        "scenarios": "情感爱情，伤感温柔，艺术氛围。",
+        "style": "氛围",
+        "style_tag": "低沉忧郁",
+        "summary": "旋律忧伤深情的慢速乐曲，以钢琴为主导，音色柔和舒适，适合表达悲伤情感与心灵慰藉。"
+      }
+    },
+    "c0545c3db6751eeaece8112a11382db0.mp3": {
+      "file_path": "c0545c3db6751eeaece8112a11382db0.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，律动柔和。",
+        "emotion": "忧伤、失落、悲痛、压抑。",
+        "timbre": "清脆、明亮、温暖、清新。",
+        "instruments": "吉他。",
+        "scenarios": "文艺影视，内心独白，孤独迷茫。",
+        "style": "民谣",
+        "style_tag": "低沉忧郁",
+        "summary": "以吉他为主的中速乐曲，情感忧伤失落，氛围沉重压抑，适合展现人物内心复杂情感。"
+      }
+    },
+    "da39572afd0e139e89e522d9b69f0923.mp3": {
+      "file_path": "da39572afd0e139e89e522d9b69f0923.mp3",
+      "analysis": {
+        "rhythm": "慢速4/4拍，律动明显。",
+        "emotion": "忧伤、深沉、抒情。",
+        "timbre": "柔和、温暖、丰富。",
+        "instruments": "钢琴，二胡。",
+        "scenarios": "情感感伤，传统文化，艺术意境。",
+        "style": "民族古风",
+        "style_tag": "低沉忧郁",
+        "summary": "融合二胡与钢琴的慢速乐曲，情感忧伤深沉，具有东方韵味，适合感伤回忆及文化场景。"
+      }
+    }
+  },
+  "活泼欢快": {
+    "4e6976bc4aaacf27d6f89767c3aaf63e.mp3": {
+      "file_path": "4e6976bc4aaacf27d6f89767c3aaf63e.mp3",
+      "analysis": {
+        "rhythm": "轻快4/4拍。",
+        "emotion": "愉悦、快乐、积极、希望。",
+        "timbre": "明亮、柔和、温暖。",
+        "instruments": "人声，吉他，钢琴，合成器。",
+        "scenarios": "企业宣传，科技创新，教育激励。",
+        "style": "现代都市",
+        "style_tag": "活泼欢快",
+        "summary": "轻快明亮的现代都市乐曲，充满正能量与活力，适合企业宣传及科技创新场景。"
+      }
+    },
+    "5379044fc5953b9129d75e07058a0d24.mp3": {
+      "file_path": "5379044fc5953b9129d75e07058a0d24.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，节奏鲜明。",
+        "emotion": "欢快、愉悦、活力、希望。",
+        "timbre": "明亮、柔和、温暖、清脆。",
+        "instruments": "电吉他，钢琴，鼓，贝斯。",
+        "scenarios": "企业宣传，科技创业，正能量激励。",
+        "style": "现代都市",
+        "style_tag": "活泼欢快",
+        "summary": "活力十足的中速乐曲，节奏鲜明，音色明亮愉悦，适合企业宣传、科技创新及激励场景。"
+      }
+    },
+    "57cdc9f6b763199dc0e40bc209c91226.mp3": {
+      "file_path": "57cdc9f6b763199dc0e40bc209c91226.mp3",
+      "analysis": {
+        "rhythm": "节奏快，有活力。",
+        "emotion": "快乐、幸福、愉悦。",
+        "timbre": "明亮、清脆、温暖。",
+        "instruments": "人声，木琴，打击乐器。",
+        "scenarios": "儿童教育，企业宣传，广告营销。",
+        "style": "轻松愉悦",
+        "style_tag": "活泼欢快",
+        "summary": "欢快活泼的快节奏儿童音乐，音色明亮幸福，适合儿童教育、企业活力展示及广告。"
+      }
+    }
+  },
+  "激情澎湃": {
+    "518e4f2dde2a51e132b375d9cbd8bb83.mp3": {
+      "file_path": "518e4f2dde2a51e132b375d9cbd8bb83.mp3",
+      "analysis": {
+        "rhythm": "中速4/4拍，节奏强烈。",
+        "emotion": "平静、坚定、希望、爱。",
+        "timbre": "柔和、温暖、舒适。",
+        "instruments": "钢琴，小提琴。",
+        "scenarios": "感伤影视，商业广告，新闻报道。",
+        "style": "舒缓优美",
+        "style_tag": "激情澎湃",
+        "summary": "节奏感强的中速乐曲，钢琴与小提琴融合，传达坚定与希望，适合需要情感共鸣的影视广告。"
+      }
+    }
+  }
 }
