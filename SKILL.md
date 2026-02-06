@@ -5,878 +5,375 @@ description: "Vlog video editing workflow using local FLAMA for AI-powered video
 
 # Vlog Storyboard Generator
 
-This skill analyzes video footage using the local FLAMA tool and generates professional vlog editing storyboards in JSON format.
-
-## Prerequisites
-
-### Required Components
-
-1. **FLAMA Executable**: Located at `D:\data\code\flama_code\flama\build\bin\Release\flama.exe`
-2. **Supporting Files**: All required DLLs and `config.json` in the same directory
-3. **VLM Model**: Qwen2.5-VL model configured in config.json (default: `D:/data/models/Qwen2.5-VL-7B-Instruct-int4-opt`)
-4. **GPU**: Intel GPU with D3D11VA support for hardware acceleration
-
-### Supported Video Formats
-
-- MP4 (H.264/H.265)
-- MOV
-- AVI
-- MKV
-- Other FFmpeg-compatible formats
+AI-powered vlog editing workflow: video analysis → storyboard generation → final video composition.
 
 ---
 
-## Workflow Execution Steps
+## Quick Reference
 
-### Step 1: Validate Input Video Directory
+### Key Paths
 
-**Objective**: Verify the user-provided directory contains valid video files.
+| Component | Path | Notes |
+|-----------|------|-------|
+| **FLAMA** | `%FLAMA_PATH%` or default below | Configurable via environment variable |
+| FLAMA Default | `D:\data\code\flama_code\flama\build\bin\Release\flama.exe` | Fallback if env not set |
+| **compose_video.py** | `<SKILL_DIR>\scripts\compose_video.py` | Relative to this skill |
+| **BGM Directory** | `<SKILL_DIR>\resource\bgm\` | Contains 51 BGM files |
+| **BGM Index** | `<SKILL_DIR>\resource\bgm\bgm_style.json` | BGM metadata |
+| **Font File** | `<SKILL_DIR>\resource\font.ttf` | Subtitle font |
 
-**Actions**:
-1. Check if the specified directory path exists
-2. Scan for video files with common extensions: `.mp4`, `.mov`, `.avi`, `.mkv`, `.webm`, `.m4v`, `.wmv`
-3. List all discovered video files with their sizes
+**Path Variables:**
+- `<SKILL_DIR>` = `C:\Users\SAS\.claude\skills\video-editing-skills`
+- `<VIDEO_DIR>` = User-provided video directory
+- `<WORKSPACE_DIR>` = `<VIDEO_DIR>\editing_YYYYMMDD_HHMMSS`
 
-**Validation Rules**:
-- Directory must exist and be accessible
-- At least one valid video file must be present
-- Video files should have reasonable file sizes (> 1KB)
+### Workspace Output Structure
 
-**Error Handling**:
 ```
-ERROR: Invalid video directory
-- Path: [user_provided_path]
-- Reason: [directory not found | no video files found | access denied]
-- Action: Please provide a valid directory containing video files.
-```
-
-**Success Output**:
-```
-VIDEO INVENTORY:
-- Found [N] video files in [directory_path]
-- Files:
-  1. filename1.mp4 (XX MB, estimated duration)
-  2. filename2.mp4 (XX MB, estimated duration)
-  ...
-- Proceeding to video analysis...
+<VIDEO_DIR>\editing_YYYYMMDD_HHMMSS\
+├── user_input.txt                    # Original user request
+├── output_vlm.json                   # FLAMA analysis results
+├── storyboard.json                   # Generated storyboard
+├── <THEME>_<DURATION>s_bgm_<LLM>.mp4 # Final output video
+└── temp\                             # Intermediate files
+    ├── clip_01_*.mp4
+    ├── merged_no_bgm.mp4
+    └── *.concat.txt
 ```
 
----
+### Required Storyboard Fields
 
-### Step 1.1: Create Editing Workspace
+**Must include in `storyboard_metadata`:**
+- `theme` - Video theme/title
+- `target_duration_seconds` - Target duration (e.g., 30)
+- `cloud_llm_name` - LLM name (e.g., "ClaudeOpus")
 
-**Objective**: Create a per-edit workspace folder inside the user’s video directory.
+**Must include in `audio_design.background_music`:**
+- `file_path` - **Absolute path** to BGM file
 
-**Actions**:
-1. Generate a timestamp string in local time: `YYYYMMDD_HHMMSS`
-2. Create a folder named `editing_<TIMESTAMP>` inside the user’s video directory
-3. Define this folder as `WORKSPACE_DIR` and use it for **all** subsequent outputs
+**Must include in each `clips[]` item:**
+- `clip_id`, `sequence_order`, `source_video`
+- `timecode.in_point`, `timecode.out_point`, `timecode.duration`
+- `voiceover.text` (for subtitles)
 
-**Naming Rule**:
-```
-<USER_VIDEO_DIRECTORY>\editing_YYYYMMDD_HHMMSS
-```
+### Command Templates
 
-**Examples**:
-```
-D:\data\videoclips\phone2\test1\editing_20230205_190123
-```
-
-**Hard Requirement**:
-- All files generated in this edit (analysis, storyboard, temp files, final output) **must** be inside `WORKSPACE_DIR`.
-
----
-
-### Step 1.2: Save User Input
-
-**Objective**: Persist the original user instruction for traceability.
-
-**Actions**:
-1. Write the full user request text to:
-```
-<WORKSPACE_DIR>\user_input.txt
-```
-2. Preserve the text exactly as given (no rewriting).
-
----
-
-### Step 2: Extract User Editing Requirements
-
-**Objective**: Convert the user request into explicit analysis and editing constraints that drive FLAMA prompting and storyboard decisions.
-
-**Actions**:
-1. Parse the user request into a `user_requirements` profile:
-   - `target_duration_seconds` (e.g., 30s, 60s)
-   - `theme` (e.g., 节日喜庆, 日常诗意, 城市探索)
-   - `mood` (e.g., 轻松活泼, 温暖治愈, 沉静克制)
-   - `pacing` (e.g., 连贯流畅, 富有动感, 慢节奏)
-   - `must_capture` (explicit content priorities if provided)
-2. Build a `current_analysis_prompt` that explicitly contains these requirements.
-3. Carry this same `user_requirements` profile forward into storyboard generation (Step 7).
-
-**Rule**: Treat explicit user requirements as hard constraints. Generic defaults are only used when the user does not specify a requirement.
-
----
-
-### Step 3: Verify FLAMA Tool Availability
-
-**Objective**: Ensure the FLAMA video analysis tool is properly installed and accessible.
-
-**FLAMA Installation Path**:
-```
-D:\data\code\flama_code\flama\build\bin\Release\
-```
-
-**Required Files**:
-- `flama.exe` - Main executable
-- `config.json` - Configuration file
-- Required DLLs (OpenVINO, OpenVINO GenAI, FFmpeg, oneVPL dependencies)
-
-**Verification Commands** (for the LLM to execute):
 ```bash
-# Check if flama.exe exists
+# 1. Verify FLAMA exists
 dir "D:\data\code\flama_code\flama\build\bin\Release\flama.exe"
 
-# Check if config.json exists
-dir "D:\data\code\flama_code\flama\build\bin\Release\config.json"
-```
+# 2. Run FLAMA analysis (always run fresh, never reuse output_vlm.json)
+cd /d "D:\data\code\flama_code\flama\build\bin\Release"
+flama.exe --video_dir=<VIDEO_DIR> --mode=hw --json_file=<WORKSPACE_DIR>\output_vlm.json --prompt="<PROMPT>"
 
-**Error Handling**:
-```
-ERROR: FLAMA tool not found
-- Expected path: D:\data\code\flama_code\flama\build\bin\Release\flama.exe
-- Action: Please ensure FLAMA is properly built and installed.
-- Build instructions: See D:\data\code\flama_code\flama\README.md
+# 3. Compose final video
+python "<SKILL_DIR>\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\storyboard.json"
 ```
 
 ---
 
-### Step 4: Execute FLAMA Video Analysis
+## Workflow Overview
 
-**Objective**: Run FLAMA to analyze all video files and generate segment descriptions.
+```
+Phase 1: Preparation     Phase 2: Analysis      Phase 3: Creation       Phase 4: Composition
+┌─────────────────┐     ┌─────────────────┐    ┌─────────────────┐     ┌─────────────────┐
+│ 1.1 Validate    │     │ 2.1 Find FLAMA  │    │ 3.1 Story       │     │ 4.1 Run         │
+│     Video Dir   │────►│ 2.2 Run FLAMA   │───►│     Outline     │────►│     compose_    │
+│ 1.2 Create      │     │ 2.3 Verify &    │    │ 3.2 Select Clips│     │     video.py    │
+│     Workspace   │     │     Parse Output│    │ 3.3 Voiceover   │     └─────────────────┘
+│ 1.3 Save Input  │     └─────────────────┘    │ 3.4 BGM         │
+│ 1.4 Extract     │                            │ 3.5 Output JSON │
+│     Requirements│                            └─────────────────┘
+└─────────────────┘
+```
 
-**Hard Requirement**:
-- Always run FLAMA for each edit. Do **not** reuse or inspect any previous `output_vlm.json`.
+---
 
-**FLAMA Command Syntax**:
+## Phase 1: Preparation
+
+### Step 1.1 Validate Video Directory
+
+Verify directory exists and contains video files (`.mp4`, `.mov`, `.avi`, `.mkv`, `.webm`, `.m4v`, `.wmv`).
+
 ```bash
-flama.exe --video_dir=<video_directory> --mode=hw --prompt="<analysis_prompt>"
+dir "<VIDEO_DIR>\*.mp4" "<VIDEO_DIR>\*.mov" "<VIDEO_DIR>\*.avi" "<VIDEO_DIR>\*.mkv"
 ```
 
-**Prompt Construction Rule (Required)**:
-Always generate a task-specific prompt from `user_requirements`. The prompt must reflect user-stated theme, mood, pacing, and focus.
+### Step 1.2 Create Workspace
 
-**Base Prompt Template**:
+Create timestamped workspace folder:
 ```
-请根据以下剪辑目标分析视频片段：主题是「<THEME>」，氛围是「<MOOD>」，节奏要求「<PACING>」。重点捕捉与「<MUST_CAPTURE>」相关的画面线索。描述中必须包含：场景环境、人物动作、画面构图、光线氛围、运镜方式，并突出与目标风格相关的信息。输出不超过100字。
+<VIDEO_DIR>\editing_YYYYMMDD_HHMMSS
 ```
 
-**Default Prompt** (only when user gives no special style requirement):
+All outputs go into this workspace.
+
+### Step 1.3 Save User Input
+
+Write original user request to `<WORKSPACE_DIR>\user_input.txt`.
+
+### Step 1.4 Extract User Requirements
+
+Parse user request into:
+- `target_duration_seconds` (default: 30)
+- `theme` (e.g., 节日喜庆, 日常诗意)
+- `mood` (e.g., 轻松活泼, 温暖治愈)
+- `pacing` (e.g., 连贯流畅, 富有动感)
+- `must_capture` (specific content priorities)
+
+These requirements drive FLAMA prompting and storyboard creation.
+
+---
+
+## Phase 2: Analysis
+
+### Step 2.1 Find FLAMA
+
+**Search order:**
+1. Environment variable `%FLAMA_PATH%` (if set)
+2. Default: `D:\data\code\flama_code\flama\build\bin\Release\flama.exe`
+
+Verify with: `dir "<FLAMA_PATH>"`
+
+### Step 2.2 Run FLAMA Analysis
+
+**CRITICAL: Always run fresh. Never reuse existing output_vlm.json.**
+
+```bash
+cd /d "D:\data\code\flama_code\flama\build\bin\Release"
+flama.exe --video_dir=<VIDEO_DIR> --mode=hw --json_file=<WORKSPACE_DIR>\output_vlm.json --prompt="<PROMPT>"
+```
+
+**Prompt Selection:**
+
+| Condition | Action |
+|-----------|--------|
+| User specified theme/mood/pacing | Use requirement-driven prompt |
+| No specific requirements | Use default prompt |
+
+**Default Prompt:**
 ```
 准确的描述这个视频文件中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。
 ```
 
-**Examples of Requirement-Driven Prompts**:
-
-| User Requirement | Suggested Prompt |
-|------------------|------------------|
-| 节日喜庆氛围，轻松活泼 | `请重点识别节日元素、欢庆互动、热闹场景和轻快节奏的镜头，描述场景环境、人物动作、构图、光线与运镜，突出喜庆与活力。输出不超过100字。` |
-| 捕捉日常生活中诗意瞬间 | `请重点识别日常场景中的诗意细节、情绪留白、光影变化与细腻动作，描述环境、人物、构图、光线和运镜，突出温柔与故事感。输出不超过100字。` |
-| 连贯流畅，富有动感 | `请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点，描述环境、动作、构图、光线和运镜，突出流畅衔接与动感。输出不超过100字。` |
-
-**Alternative Prompts by Vlog Type**:
-
-| Vlog Type | Recommended Prompt |
-|-----------|-------------------|
-| Travel | `描述视频中的地点特征、景观元素、氛围感受，以及镜头运动方式。输出不超过100字。` |
-| Daily Life | `描述视频中的人物活动、环境背景、情绪氛围和画面特点。输出不超过100字。` |
-| Food | `描述视频中的食物外观、烹饪过程、环境氛围和拍摄角度。输出不超过100字。` |
-| Sports | `描述视频中的运动类型、动作特征、速度感和画面动态。输出不超过100字。` |
-
-**Complete Execution Command**:
-```bash
-cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=<USER_VIDEO_DIRECTORY> --mode=hw --json_file=<WORKSPACE_DIR>\output_vlm.json --prompt="<CURRENT_ANALYSIS_PROMPT_FROM_USER_REQUIREMENTS>"
+**Requirement-Driven Prompt Template:**
+```
+请根据以下剪辑目标分析视频片段：主题是「<THEME>」，氛围是「<MOOD>」，节奏要求「<PACING>」。重点捕捉与「<MUST_CAPTURE>」相关的画面线索。描述中必须包含：场景环境、人物动作、画面构图、光线氛围、运镜方式，并突出与目标风格相关的信息。输出不超过100字。
 ```
 
-**Execution Parameters**:
-- `--video_dir`: User-provided video directory path
-- `--mode=hw`: Hardware-accelerated decoding (recommended) or `sw` for software decoding
-- `--json_file`: Output JSON file path for VLM results (should be `<WORKSPACE_DIR>\output_vlm.json`)
-- `--prompt`: Custom prompt for video analysis
+**Example Prompts by Style:**
 
-**Expected Runtime**:
-- Processing speed depends on video length, GPU capability, and number of files
-- Typical: 3-second segments, ~1-2 seconds per segment analysis
+| Style | Prompt |
+|-------|--------|
+| 节日喜庆 | `请重点识别节日元素、欢庆互动、热闘场景和轻快节奏的镜头...突出喜庆与活力。输出不超过100字。` |
+| 日常诗意 | `请重点识别日常场景中的诗意细节、情绪留白、光影变化与细腻动作...突出温柔与故事感。输出不超过100字。` |
+| 连贯动感 | `请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点...突出流畅衔接与动感。输出不超过100字。` |
 
----
+### Step 2.3 Verify & Parse Output
 
-### Step 5: Verify Analysis Output
+Verify `<WORKSPACE_DIR>\output_vlm.json` exists and read it.
 
-**Objective**: Confirm successful generation of video analysis results.
-
-**Output File Location**:
-```
-<WORKSPACE_DIR>\output_vlm.json
-```
-
-The `output_vlm.json` file is saved to the edit workspace via the `--json_file` parameter.
-
-**Verification**:
-```bash
-# Check if output file exists and has content
-dir "<WORKSPACE_DIR>\output_vlm.json"
-```
-
-**Error Handling**:
-```
-ERROR: Video analysis failed
-- Expected output: <WORKSPACE_DIR>\output_vlm.json
-- Possible causes:
-  1. GPU driver issues
-  2. Insufficient GPU memory
-  3. Corrupted video files
-  4. VLM model not found
-- Action: Check FLAMA console output for detailed error messages.
-```
-
----
-
-### Step 6: Parse and Understand Video Content
-
-**Objective**: Read and comprehensively analyze the output_vlm.json file.
-
-**Output JSON Structure**:
-
+**Output Structure:**
 ```json
 {
-  "processed_videos": [
-    {
-      "input_video": "D:\\path\\to\\video1.mp4",
-      "prompt": "analysis prompt used",
-      "segments": [
-        {
-          "seg_id": 0,
-          "seg_start": 0.0,
-          "seg_end": 3.003,
-          "seg_dur": 3.003,
-          "seg_desc": "视频片段的AI生成描述..."
-        },
-        {
-          "seg_id": 1,
-          "seg_start": 3.003,
-          "seg_end": 6.006,
-          "seg_dur": 3.003,
-          "seg_desc": "下一个片段的描述..."
-        }
-      ]
-    },
-    {
-      "input_video": "D:\\path\\to\\video2.mp4",
-      "prompt": "analysis prompt used",
-      "segments": [...]
-    }
-  ]
+  "processed_videos": [{
+    "input_video": "D:\\path\\video.mp4",
+    "segments": [{
+      "seg_id": 0,
+      "seg_start": 0.0,
+      "seg_end": 3.003,
+      "seg_dur": 3.003,
+      "seg_desc": "AI生成的内容描述..."
+    }]
+  }]
 }
 ```
 
-**Data Structure Explanation**:
-
-| Level | Field | Description |
-|-------|-------|-------------|
-| Root | processed_videos | Array of all analyzed video files |
-| Video | input_video | Full path to source video file |
-| Video | prompt | The prompt used for analysis |
-| Video | segments | Array of video segments (default ~3 seconds each) |
-| Segment | seg_id | Sequential segment identifier (0-indexed) |
-| Segment | seg_start | Start timestamp in seconds |
-| Segment | seg_end | End timestamp in seconds |
-| Segment | seg_dur | Segment duration in seconds |
-| Segment | seg_desc | AI-generated content description |
-
-**Analysis Guidelines**:
-
-When reading output_vlm.json, extract and categorize the following:
-
-1. **Scene Inventory**: List all unique locations/environments
-2. **Subject Tracking**: Identify recurring subjects (people, objects, landmarks)
-3. **Visual Themes**: Note lighting conditions, color palettes, mood
-4. **Camera Work**: Identify shot types (wide, close-up, tracking, static)
-5. **Temporal Flow**: Map the progression of events across all footage
-6. **Highlight Moments**: Flag visually striking or emotionally impactful segments
+Extract: scene inventory, subjects, visual themes, camera work, highlight moments.
 
 ---
 
-### Step 7: Generate Vlog Storyboard
+## Phase 3: Creation
 
-**Objective**: Create a professional vlog editing storyboard based on video analysis and explicitly satisfy user editing requirements.
+### Step 3.1 Story Outline Development
 
-**Hard Constraint**:
-- Prioritize `user_requirements` (theme, mood, pacing, must-capture) over generic template preferences.
-- If conflict exists, follow user requirements.
+Structure with narrative arc:
+- **Opening Hook** (5-10%): Visually striking moment
+- **Introduction** (10-15%): Establish context
+- **Rising Action** (30-40%): Main narrative
+- **Climax** (15-20%): Peak moment
+- **Resolution** (10-15%): Wrap up
+- **Outro** (5-10%): Final impression
 
-This is the creative core of the skill. Follow these sub-steps carefully:
+### Step 3.2 Segment Selection & Sequencing
 
-#### 7.1 Story Outline Development
+**Selection Criteria:**
+1. Visual quality (well-lit, stable)
+2. Content relevance to story
+3. Variety (shot types)
+4. Pacing balance
+5. Requirement alignment
 
-**Process**:
-1. Review all segment descriptions to understand available footage
-2. Map footage to `user_requirements` first, then define narrative theme and emotional line
-3. Structure the story with classic narrative arc:
-   - **Opening Hook** (5-10%): Visually striking moment to capture attention
-   - **Introduction** (10-15%): Establish context, location, or subject
-   - **Rising Action** (30-40%): Build the main narrative
-   - **Climax** (15-20%): Peak moment or highlight
-   - **Resolution** (10-15%): Wrap up and provide closure
-   - **Outro** (5-10%): Final impression or call-to-action
+**Duration Guide:**
+- 30s vlog → ~10 segments
+- 60s vlog → ~20 segments
+- 90s vlog → ~30 segments
 
-**Narrative Approaches by Content Type**:
+**Rules:**
+- Never reuse same segment (source_video + seg_id pair must be unique)
+- Never start with static/boring shot
+- Avoid similar shots consecutively
 
-| Content Type | Recommended Structure |
-|--------------|----------------------|
-| Travel | Arrival → Exploration → Discovery → Reflection |
-| Daily Vlog | Morning → Activities → Highlights → Evening |
-| Event | Preparation → Beginning → Peak Moments → Conclusion |
-| Tutorial | Hook → Problem → Process → Result |
-| Montage | Theme Introduction → Variations → Crescendo → Resolution |
+### Step 3.3 Voiceover/Caption Generation
 
-#### 7.2 Segment Selection and Sequencing
+- 10-15 words per 3-second segment max
+- Match vlog mood (uplifting, reflective, etc.)
+- Complement visuals, don't describe them
 
-**Selection Criteria**:
+### Step 3.4 BGM Selection
 
-1. **Visual Quality**: Prioritize well-lit, stable, properly framed shots
-2. **Content Relevance**: Match segments to story outline sections
-3. **Variety**: Balance different shot types (wide/medium/close)
-4. **Pacing**: Alternate between dynamic and calm segments
-5. **Continuity**: Ensure logical visual flow between segments
-6. **Duration Fit**: Select segments to meet target duration constraint
-7. **No Duplicates**: Never reuse the same source segment. A `(source_video, source_segment_id)` pair must appear at most once in `clips`.
-8. **Requirement Fit**: Each selected segment should support at least one explicit user requirement (theme/mood/pacing/must-capture).
+**REQUIRED: Must select exactly one BGM.**
 
-**Sequencing Rules**:
+1. Read `<SKILL_DIR>\resource\bgm\bgm_style.json`
+2. Match BGM to user requirements (theme, mood, pacing)
+3. Write **absolute path** to storyboard
 
-- **Never** start with a static or boring shot
-- **Avoid** placing similar shots consecutively
-- **Use** transition-friendly segments at cut points
-- **Build** visual momentum toward climax
-- **End** with a memorable, complete moment
-- **Do Not Repeat Segments**: If a segment is already used, choose a different segment even if it looks similar.
-
-**Duration Calculation**:
-
+**BGM Path Construction:**
 ```
-Target Duration: User-specified (e.g., 30 seconds, 60 seconds)
-Available Segments: From output_vlm.json
-Segment Unit: ~3 seconds each
-
-For 30-second vlog: Select ~10 segments
-For 60-second vlog: Select ~20 segments
-For 90-second vlog: Select ~30 segments
+Absolute path = <SKILL_DIR>\resource\bgm\ + file_path from JSON
+Example: C:\Users\SAS\.claude\skills\video-editing-skills\resource\bgm\0aa3bfd386bf595b301119302595aaf3.mp3
 ```
 
-#### 7.3 Voiceover/Caption Generation
+### Step 3.5 Output storyboard.json
 
-**Guidelines**:
+**CRITICAL: Always write fresh. Never reuse existing storyboard.json.**
 
-1. **Tone**: Match the vlog's mood (uplifting, reflective, exciting, calm)
-2. **Length**: 10-15 words per 3-second segment maximum
-3. **Style**: Conversational, engaging, not overly descriptive
-4. **Function**: Complement visuals, don't merely describe them
-5. **Rhythm**: Vary sentence length for natural flow
-6. **Requirement Alignment**: Word choice should reinforce user-specified style (e.g., 喜庆、诗意、动感).
+Write to: `<WORKSPACE_DIR>\storyboard.json`
 
-**Voiceover Types**:
-
-| Type | When to Use | Example |
-|------|-------------|---------|
-| Narrative | Story-driven vlogs | "那天早晨，阳光正好..." |
-| Reflective | Travel, personal vlogs | "这一刻，时间仿佛静止了" |
-| Informative | Tutorial, educational | "这里有个小技巧..." |
-| Emotional | Highlights, montages | "每一帧都是回忆" |
-| Minimal | Action-heavy content | [Music only, sparse text] |
-
-**Language Quality Standards**:
-- 文字优美，富有画面感
-- 节奏流畅，朗朗上口
-- 情感真挚，不矫揉造作
-- 主题升华，点睛之笔
-
-#### 7.4 BGM Selection (Required)
-
-**Objective**: Select a single background music (BGM) file that best matches the current vlog's content, theme, mood, and pacing.
-
-**BGM Library**:
-- Audio files folder: `C:\Users\SAS\.claude\skills\video-editing-skills\resource\bgm`
-- Style index JSON: `C:\Users\SAS\.claude\skills\video-editing-skills\resource\bgm\bgm_style.json`
-
-**Selection Rules**:
-1. **Must read** `bgm_style.json` and evaluate the available tracks by their `analysis` fields.
-2. **Match priorities** (from strongest to weakest):
-   - User requirements (`theme`, `mood`, `pacing`, `must_capture`)
-   - Storyboard narrative arc and overall tone
-   - Audio descriptors in `analysis` (emotion, rhythm, timbre, instruments, scenarios, style, summary)
-3. **Choose exactly one** BGM track. Do not leave this empty and do not choose randomly.
-4. **Write the full absolute path** of the selected BGM into the storyboard JSON under:
-   - `audio_design.background_music.file_path`
-5. Also include the chosen track’s metadata for traceability:
-   - `audio_design.background_music.style_tag`
-   - `audio_design.background_music.summary`
-
-**BGM Selection Output Example**:
-```json
-"audio_design": {
-  "background_music": {
-    "file_path": "C:\\Users\\SAS\\.claude\\skills\\video-editing-skills\\resource\\bgm\\0aa3bfd386bf595b301119302595aaf3.mp3",
-    "style_tag": "舒缓优美",
-    "summary": "以钢琴、小提琴和长笛为主的慢速4/4拍音乐，音色柔和温馨，营造出平和安宁与浪漫抒情的氛围。",
-    "mood": "uplifting, peaceful",
-    "tempo": "slow to medium",
-    "suggested_genres": ["acoustic", "ambient", "piano"],
-    "volume_curve": "fade in at start, peak at climax, fade out at end"
-  },
-  "sound_design": {
-    "use_original_audio": true,
-    "ambient_enhancement": "nature sounds where applicable",
-    "audio_ducking": "lower music during voiceover"
-  }
-}
-```
-
-**Hard Requirement**:
-- The cloud LLM must always write a valid `audio_design.background_music.file_path` pointing to an existing file in the BGM library. This is used directly by `compose_video.py`.
-
----
-
-#### 7.5 Output Storyboard JSON Format
-
-**IMPORTANT**: The final storyboard MUST be written to a file named `storyboard.json` inside the edit workspace (`<WORKSPACE_DIR>\storyboard.json`). **Even if a storyboard.json already exists, always regenerate a new storyboard and overwrite it. Do not reuse existing storyboard.json.** Use the Write tool to create this file after generating the complete storyboard JSON content.
-
-**Output File Location**:
-```
-<WORKSPACE_DIR>\storyboard.json
-```
-
-**Complete Storyboard Schema**:
-
+**Minimal Required Schema:**
 ```json
 {
   "storyboard_metadata": {
-    "version": "1.0",
-    "generated_at": "ISO8601 timestamp",
+    "theme": "视频主题",
     "target_duration_seconds": 30,
-    "actual_duration_seconds": 31.5,
-    "total_clips": 10,
-    "source_videos_count": 5,
-    "vlog_type": "travel",
-    "theme": "山间晨光之旅",
-    "mood": "peaceful, inspiring",
-    "cloud_llm_name": "CloudLLM",
-    "analysis_prompt_used": "最终用于FLAMA分析的提示词",
-    "user_requirements": {
-      "theme": "用户指定主题",
-      "mood": "用户指定氛围",
-      "pacing": "用户指定节奏",
-      "must_capture": ["用户强调的关键元素"]
-    }
+    "cloud_llm_name": "ClaudeOpus"
   },
-
-  "story_outline": {
-    "title": "Vlog标题",
-    "synopsis": "一句话概述整个视频的主题和情感基调",
-    "narrative_arc": [
-      {"section": "hook", "description": "开场镜头设计意图"},
-      {"section": "introduction", "description": "背景介绍意图"},
-      {"section": "rising_action", "description": "主体内容发展"},
-      {"section": "climax", "description": "高潮部分设计"},
-      {"section": "resolution", "description": "结尾收束方式"}
-    ]
-  },
-
-  "clips": [
-    {
-      "clip_id": 1,
-      "sequence_order": 1,
-      "source_video": "D:\\path\\to\\source_video.mp4",
-      "source_segment_id": 0,
-      "timecode": {
-        "in_point": 0.0,
-        "out_point": 3.003,
-        "duration": 3.003
-      },
-      "story_section": "hook",
-      "content_description": "来自output_vlm.json的原始描述",
-      "editorial_note": "选择此片段的理由和剪辑意图",
-      "suggested_transition_in": "cut",
-      "suggested_transition_out": "dissolve",
-      "voiceover": {
-        "text": "在云端之上，山峦起伏如画",
-        "style": "reflective",
-        "timing": "sync_with_visual"
-      },
-      "music_note": "轻柔钢琴，渐入"
+  "clips": [{
+    "clip_id": 1,
+    "sequence_order": 1,
+    "source_video": "D:\\path\\video.mp4",
+    "source_segment_id": 0,
+    "timecode": {
+      "in_point": 0.0,
+      "out_point": 3.0,
+      "duration": 3.0
     },
-    {
-      "clip_id": 2,
-      "sequence_order": 2,
-      "source_video": "...",
-      "...": "..."
+    "voiceover": {
+      "text": "字幕文本"
     }
-  ],
-
+  }],
   "audio_design": {
     "background_music": {
-      "file_path": "C:\\path\\to\\resource\\bgm\\selected_bgm.mp3",
+      "file_path": "C:\\Users\\SAS\\.claude\\skills\\video-editing-skills\\resource\\bgm\\xxx.mp3",
       "style_tag": "舒缓优美",
-      "summary": "简要说明这首BGM的风格与适配理由",
-      "mood": "uplifting, peaceful",
-      "tempo": "slow to medium",
-      "suggested_genres": ["acoustic", "ambient", "piano"],
-      "volume_curve": "fade in at start, peak at climax, fade out at end"
-    },
-    "sound_design": {
-      "use_original_audio": true,
-      "ambient_enhancement": "nature sounds where applicable",
-      "audio_ducking": "lower music during voiceover"
+      "summary": "BGM描述"
     }
-  },
-
-  "editing_notes": {
-    "color_grading": "温暖色调，略微提升对比度",
-    "pacing": "前慢后快，高潮处加速剪辑",
-    "special_effects": "可选：轻微的光晕效果",
-    "text_overlays": [
-      {"timecode": 0.0, "text": "标题", "style": "title"},
-      {"timecode": 28.0, "text": "THE END", "style": "outro"}
-    ]
-  },
-
-  "export_recommendations": {
-    "resolution": "1080p or 4K based on source",
-    "aspect_ratio": "16:9 or 9:16 for vertical",
-    "frame_rate": "match source or 30fps",
-    "format": "MP4 H.264"
   }
 }
 ```
 
-**Required Metadata for Output Naming**:
-- `storyboard_metadata.theme`
-- `storyboard_metadata.target_duration_seconds`
-- `storyboard_metadata.cloud_llm_name`
+**Extended Fields (Optional):**
+- `storyboard_metadata.version`, `generated_at`, `actual_duration_seconds`, `vlog_type`, `mood`, `user_requirements`
+- `story_outline.title`, `synopsis`, `narrative_arc[]`
+- `clips[].story_section`, `content_description`, `editorial_note`, `suggested_transition_in/out`, `music_note`
+- `audio_design.background_music.mood`, `tempo`, `suggested_genres`, `volume_curve`
+- `audio_design.sound_design.use_original_audio`, `ambient_enhancement`, `audio_ducking`
+- `editing_notes.color_grading`, `pacing`, `special_effects`, `text_overlays[]`
+- `export_recommendations.resolution`, `aspect_ratio`, `frame_rate`, `format`
 
 ---
 
-### Step 8: Compose Final Video with FFmpeg
+## Phase 4: Composition
 
-**Objective**: Use the generated `storyboard.json` to automatically cut clips, overlay subtitles, and concatenate the final video.
+### Step 4.1 Run compose_video.py
 
-**Tool**: `compose_video.py` located in:
-```
-D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py
-```
-
-**BGM Integration (Required)**:
-- `compose_video.py` reads `audio_design.background_music.file_path` from `storyboard.json` and uses it directly.
-- If the specified file does not exist, the script will fall back to a random BGM from `resource\bgm`.
-- Therefore, the storyboard **must** contain a valid absolute path to the chosen BGM file.
-
-**Workspace Output Organization (Critical)**:
-
-The `compose_video.py` script automatically determines output locations based on the storyboard file's parent directory:
-- **Workspace directory** = Parent directory of `storyboard.json` (i.e., the `editing_YYYYMMDD_HHMMSS` folder)
-- **Temp folder** = `<WORKSPACE_DIR>\temp`
-
-**File Organization Rules**:
-
-| File Type | Location | Examples |
-|-----------|----------|----------|
-| All intermediate clip files | `<WORKSPACE_DIR>\temp` | `clip_01_id1_raw.mp4`, `clip_01_id1_sub.mp4` |
-| Merged video WITHOUT BGM | `<WORKSPACE_DIR>\temp` | `merged_no_bgm.mp4` |
-| Concatenation list files | `<WORKSPACE_DIR>\temp` | `merged_no_bgm.concat.txt` |
-| **Final output WITH BGM** | `<WORKSPACE_DIR>` (root) | `日常诗意瞬间_30s_bgm_ClaudeOpus.mp4` |
-
-**Final Output Naming Rule (Required)**:
-```
-<VIDEO_THEME>_<DURATION>s_bgm_<CLOUD_LLM_NAME>.mp4
-```
-Where:
-- `<VIDEO_THEME>` comes from `storyboard_metadata.theme` (sanitized for filename safety)
-- `<DURATION>s` is `target_duration_seconds` with "s" suffix (e.g., `30s`, `60s`)
-- `<CLOUD_LLM_NAME>` comes from `storyboard_metadata.cloud_llm_name`
-
-**Examples**:
-```
-日常诗意瞬间_30s_bgm_ClaudeOpus.mp4
-山间晨光之旅_60s_bgm_Claude.mp4
-城市探索_45s_bgm_GPT4.mp4
-```
-
-**Required Storyboard Metadata Fields**:
-The cloud LLM **must** include these fields in `storyboard_metadata` for proper output naming:
-- `theme`: Video theme/title (e.g., "日常诗意瞬间")
-- `target_duration_seconds`: Target duration in seconds (e.g., 30)
-- `cloud_llm_name`: Name of the cloud LLM generating the storyboard (e.g., "ClaudeOpus")
-
-**Filename Safety**:
-The script automatically sanitizes filenames by:
-- Replacing invalid characters (`\/:*?"<>|`) with underscores
-- Removing leading/trailing whitespace and underscores
-- Collapsing multiple consecutive underscores
-
-**Critical Requirement (Strict Execution)**:
-- The cloud LLM **must** run the compose step **exactly** with the command shown below.
-- **Do not** alter or invent any arguments.
-- The script automatically derives all output paths from the storyboard location.
-
-**Strict Command (Must Use As-Is)**:
 ```bash
-python "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\storyboard.json"
+python "C:\Users\SAS\.claude\skills\video-editing-skills\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\storyboard.json"
 ```
 
-**Example**:
-```bash
-python "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py" --storyboard "D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json"
+**Script Behavior:**
+1. Reads storyboard.json
+2. Creates `<WORKSPACE_DIR>\temp\` folder
+3. Extracts and processes each clip → saves to temp
+4. Concatenates clips → `temp\merged_no_bgm.mp4`
+5. Adds BGM from storyboard (falls back to random if path invalid)
+6. Outputs final: `<WORKSPACE_DIR>\<THEME>_<DURATION>s_bgm_<LLM>.mp4`
+
+**Output Naming:**
 ```
-
-**Script Behavior**:
-1. Reads `storyboard.json` and extracts clips and metadata
-2. Creates `<WORKSPACE_DIR>\temp` folder if not exists
-3. Extracts and processes each clip → saves to `temp` folder
-4. Concatenates all clips → saves `merged_no_bgm.mp4` to `temp` folder
-5. Reads BGM path from storyboard (falls back to random if not found)
-6. Adds BGM to merged video → saves final output to `<WORKSPACE_DIR>` root
-
-**Expected Console Output**:
-```
-Workspace directory: D:\data\videoclips\phone2\007_input\editing_20230205_190123
-Temp directory: D:\data\videoclips\phone2\007_input\editing_20230205_190123\temp
-Video theme: 山间晨光之旅
-Target duration: 30s
-Cloud LLM: ClaudeOpus
-
-== Processing clip 1 (clip_id=1) ==
-...
-== Concatenating 10 clips ==
-...
-Using BGM from storyboard: C:\Users\SAS\.claude\skills\video-editing-skills\resource\bgm\...
-== Adding BGM: ... ==
-...
-Done. Final output with BGM: D:\data\videoclips\phone2\007_input\editing_20230205_190123\山间晨光之旅_30s_bgm_ClaudeOpus.mp4
-Intermediate files saved to: D:\data\videoclips\phone2\007_input\editing_20230205_190123\temp
-```
-
-**Optional Inputs** (Manual Local Use Only):
-- `--ffmpeg`: Path to ffmpeg executable. If omitted, uses `..\bin\ffmpeg.exe` when present, otherwise `ffmpeg` in PATH.
-- `--font_file`: Path to subtitle font. Default: `..\resource\font.ttf` relative to script.
-- `--dry-run`: Print ffmpeg commands without executing.
-
----
-
-## Complete Example Workflow
-
-### User Request
-```
-这是 D:\data\videoclips\phone2\007_input 本地文件夹中包含了多个视频文件，
-帮我生成一个30秒时长的vlog视频剪辑脚本，要求连贯流畅、富有动感，使用json格式输出
-```
-
-### Step-by-Step Execution
-
-#### 1. Validate Input Directory
-```bash
-dir "D:\data\videoclips\phone2\007_input\*.mp4"
-```
-Output: List of video files found
-
-#### 2. Create Workspace
-Create:
-```
-D:\data\videoclips\phone2\007_input\editing_20230205_190123
-```
-
-#### 3. Save User Input
-Write the original request to:
-```
-D:\data\videoclips\phone2\007_input\editing_20230205_190123\user_input.txt
-```
-
-#### 4. Verify FLAMA
-```bash
-dir "D:\data\code\flama_code\flama\build\bin\Release\flama.exe"
-```
-Output: File exists
-
-#### 5. Execute Analysis (Always Run)
-```bash
-cd /d "D:\data\code\flama_code\flama\build\bin\Release"
-flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --json_file=D:\data\videoclips\phone2\007_input\editing_20230205_190123\output_vlm.json --prompt="请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点，描述环境、动作、构图、光线和运镜，突出流畅衔接与动感。输出不超过100字。"
-```
-
-#### 6. Verify Output
-```bash
-dir "D:\data\videoclips\phone2\007_input\editing_20230205_190123\output_vlm.json"
-```
-
-#### 7. Read and Analyze
-Read the complete output_vlm.json file and extract:
-- Total number of source videos
-- Total available segments
-- Scene variety and themes
-- Potential highlight moments
-
-#### 8. Generate Storyboard
-Apply creative judgment to produce the final JSON storyboard.
-
-#### 9. Save Storyboard to Workspace
-Write the complete storyboard JSON to:
-```
-D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json
-```
-Always overwrite existing storyboard.json; never reuse it.
-
-#### 10. Compose Final Video
-Run the compose script to generate the final video:
-```bash
-python "D:\data\code\flama_code\video-editing-skills\video-editing-skills-vlog\scripts\compose_video.py" --storyboard "D:\data\videoclips\phone2\007_input\editing_20230205_190123\storyboard.json"
-```
-
-**Output Structure**:
-```
-D:\data\videoclips\phone2\007_input\editing_20230205_190123\
-├── user_input.txt                              # User's original request
-├── output_vlm.json                             # FLAMA analysis results
-├── storyboard.json                             # Generated storyboard
-├── 山间晨光之旅_30s_bgm_ClaudeOpus.mp4         # ✅ FINAL OUTPUT (with BGM)
-└── temp\                                       # Intermediate files
-    ├── clip_01_id1_raw.mp4
-    ├── clip_01_id1_sub.mp4
-    ├── clip_02_id2_raw.mp4
-    ├── clip_02_id2_sub.mp4
-    ├── ...
-    ├── merged_no_bgm.mp4                       # Merged video without BGM
-    └── merged_no_bgm.concat.txt
+<theme>_<duration>s_bgm_<cloud_llm_name>.mp4
+Example: 日常诗意瞬间_30s_bgm_ClaudeOpus.mp4
 ```
 
 ---
 
-## Error Recovery Procedures
+## Hard Requirements Summary
 
-### Common Issues and Solutions
+| Rule | Description |
+|------|-------------|
+| **Fresh Analysis** | Always run FLAMA fresh. NEVER reuse existing output_vlm.json |
+| **Fresh Storyboard** | Always generate new storyboard. NEVER reuse existing storyboard.json |
+| **No Duplicate Clips** | Each (source_video, source_segment_id) pair used at most once |
+| **BGM Required** | Must select exactly one BGM with valid absolute path |
+| **Workspace Output** | All files must be inside `<WORKSPACE_DIR>` |
+| **Required Metadata** | theme, target_duration_seconds, cloud_llm_name must be present |
+| **Absolute BGM Path** | `audio_design.background_music.file_path` must be absolute path |
+
+---
+
+## Error Handling
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| "flama.exe not found" | Build not completed | Run build.bat in flama directory |
-| "No video files" | Wrong path or format | Verify path and file extensions |
-| "GPU initialization failed" | Driver/hardware issue | Use --mode=sw for software decode |
-| "Model not found" | VLM model missing | Check config.json model_path |
-| "output_vlm.json empty" | Processing failed | Check console for specific errors |
-| "storyboard.json not created" | Write tool failed | Verify write permissions to workspace directory |
-| "Insufficient segments" | Short video files | Adjust prompt or combine videos |
-
-### Fallback Strategies
-
-1. **Hardware Decode Fails**: Switch to `--mode=sw`
-2. **Model Loading Fails**: Verify model path in config.json
-3. **Insufficient Content**: Request user provide more footage
-4. **Quality Issues**: Suggest re-shooting or alternative clips
+| FLAMA not found | Build not completed | Verify path, run build.bat |
+| No video files | Wrong path/format | Check path and extensions |
+| GPU init failed | Driver/hardware | Use `--mode=sw` |
+| output_vlm.json empty | Processing failed | Check console errors |
+| storyboard.json not created | Write failed | Check permissions |
+| Insufficient segments | Short videos | Combine videos or adjust duration |
+| BGM path invalid | Wrong path format | Use absolute path with proper escaping |
 
 ---
 
-## Quality Assurance Checklist
+## Complete Example
 
-Before delivering the final storyboard, verify:
+**User Request:**
+```
+D:\data\videoclips\phone2\007_input 文件夹中包含多个视频，生成一个30秒vlog，连贯流畅、富有动感
+```
 
-- [ ] Total duration matches user request (±10% tolerance)
-- [ ] All source video paths are valid and accessible
-- [ ] Segment timecodes are accurate and non-overlapping
-- [ ] Story has clear beginning, middle, and end
-- [ ] Voiceover text is grammatically correct and engaging
-- [ ] No duplicate segments used consecutively
-- [ ] Transitions are appropriate for content type
-- [ ] FLAMA prompt explicitly reflects current user requirements
-- [ ] Storyboard theme/mood/pacing clearly matches user request keywords
-- [ ] JSON is valid and well-formatted
-- [ ] `audio_design.background_music.file_path` is a valid absolute path to an existing BGM file
-- [ ] Workspace folder `editing_YYYYMMDD_HHMMSS` created under the user video directory
-- [ ] `user_input.txt` saved to `<WORKSPACE_DIR>\user_input.txt`
-- [ ] `output_vlm.json` saved to `<WORKSPACE_DIR>\output_vlm.json`
-- [ ] `storyboard.json` saved to `<WORKSPACE_DIR>\storyboard.json`
-- [ ] `storyboard_metadata.theme`, `target_duration_seconds`, and `cloud_llm_name` are present
-- [ ] Temp folder created at `<WORKSPACE_DIR>\temp` with all intermediate video files
-- [ ] Final output saved to `<WORKSPACE_DIR>\<VIDEO_THEME>_<DURATION>_bgm_<CLOUD_LLM_NAME>.mp4`
-
----
-
-## Advanced Usage Notes
-
-### Custom Prompts for Specialized Analysis
-
-For specific vlog types, customize the FLAMA prompt:
+**Execution:**
 
 ```bash
-# Cinematic/Artistic Analysis
---prompt="分析画面的构图美学、光影质感、色彩情绪和视觉张力。输出专业影像描述，不超过100字。"
+# 1. Validate
+dir "D:\data\videoclips\phone2\007_input\*.mp4"
 
-# Action/Sports Content
---prompt="描述画面中的动态元素、运动轨迹、速度感和能量氛围。输出动感描述，不超过100字。"
+# 2. Create workspace
+mkdir "D:\data\videoclips\phone2\007_input\editing_20250205_143000"
 
-# Emotional/Personal Content
---prompt="捕捉画面中的情感瞬间、人物表情、氛围感受和故事性元素。输出情感化描述，不超过100字。"
+# 3. Save user input (via Write tool)
+
+# 4. Run FLAMA
+cd /d "D:\data\code\flama_code\flama\build\bin\Release"
+flama.exe --video_dir=D:\data\videoclips\phone2\007_input --mode=hw --json_file=D:\data\videoclips\phone2\007_input\editing_20250205_143000\output_vlm.json --prompt="请重点识别可形成连贯动作链的镜头、运动方向、速度变化与节奏点，描述环境、动作、构图、光线和运镜，突出流畅衔接与动感。输出不超过100字。"
+
+# 5. Read output_vlm.json, generate storyboard.json (via Write tool)
+
+# 6. Compose
+python "C:\Users\SAS\.claude\skills\video-editing-skills\scripts\compose_video.py" --storyboard "D:\data\videoclips\phone2\007_input\editing_20250205_143000\storyboard.json"
 ```
 
-### Multi-Language Voiceover
-
-The storyboard can include multiple language options:
-
-```json
-"voiceover": {
-  "zh": "中文旁白文字",
-  "en": "English voiceover text",
-  "style": "reflective"
-}
+**Final Output:**
 ```
-
-### Vertical Video (Short-form) Adaptation
-
-For TikTok/Reels/Shorts format:
-- Target duration: 15-60 seconds
-- Aspect ratio: 9:16
-- Faster pacing: 1.5-2.5 second clips
-- Hook within first 3 seconds
-- Text-heavy for muted viewing
-
----
-
-## Technical Reference
-
-### FLAMA Command Reference
-
-```bash
-flama.exe [OPTIONS]
-
-OPTIONS:
-  --video_dir=PATH      Directory of video files (sorted by filename)
-  --mode=hw|sw          Decode mode: hw (GPU) or sw (CPU)
-  --config=PATH         Custom config file path
-  --json_file=PATH      Output JSON file path (default: ./output_vlm.json)
-  --prompt=TEXT         Override default VLM prompt
-  --debug=0|1           Enable debug logging
-```
-
-### Config.json Key Settings
-
-```json
-{
-  "common": {
-    "decode_mode": "hw",           // "hw" or "sw"
-    "vpp_downscaling": {
-      "width": 448,                // VLM input width
-      "height": 448                // VLM input height
-    }
-  },
-  "genai": {
-    "model_path": "path/to/vlm",   // VLM model location
-    "device": "GPU"                // "GPU" or "CPU"
-  }
-}
+D:\data\videoclips\phone2\007_input\editing_20250205_143000\连贯动感_30s_bgm_ClaudeOpus.mp4
 ```
