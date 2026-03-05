@@ -200,9 +200,10 @@ def escape_drawtext_text(value: str) -> str:
 
 
 def escape_drawtext_path(value: str) -> str:
-    # Escape path for drawtext fontfile. Prefer forward slashes.
+    # For drawtext fontfile/textfile: use forward slashes (Windows ffmpeg accepts them),
+    # and escape only ':' so it is not treated as filter option separator.
     value = value.replace("\\", "/")
-    value = value.replace(":", r"\:")
+    value = value.replace(":", "\\\\:")
     return value
 
 
