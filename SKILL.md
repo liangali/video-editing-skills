@@ -245,7 +245,7 @@ dir "<VIDEO_DIR>\*.mp4" "<VIDEO_DIR>\*.mov" "<VIDEO_DIR>\*.avi" "<VIDEO_DIR>\*.m
 
 ### 步骤 2.3 运行 FLAMA 分析
 
-**关键规则：** 仅在步骤 2.2 通过后执行；始终重新运行，绝不复用已有的 output_vlm.json。
+**关键规则：** 仅在步骤 2.2 通过后执行；始终重新运行，绝不复用已有的 output_vlm.json；运行前必须确认当前工作区文件夹下没有output_vlm.json。
 
 ```bash
 cd /d "<SKILL_DIR>\bin\flama"
