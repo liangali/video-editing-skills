@@ -36,7 +36,7 @@ $dgpu = $allGpus |
 $igpu = $allGpus |
     Where-Object {
         $_.Name -match "Intel" -and
-        $_.Name -match "UHD|Iris Xe|Iris\s+Xe|Arc Graphics" -and
+        $_.Name -match "UHD|Iris|Xe|Arc" -and
         $_.Name -notmatch $dGpuPattern
     } |
     Select-Object -First 1
