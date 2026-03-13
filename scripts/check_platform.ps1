@@ -25,32 +25,46 @@
 
 # 独显白名单：只写型号编号（如 "B580"），不写 "Arc B580"
 # 实际显卡名含 (TM)，如 "Intel(R) Arc(TM) B580 Graphics"，全名匹配会失败
-$DGPU_WHITELIST = @("A770", "B580")
+$DGPU_WHITELIST = @("A770", "B580", "B50" ,"B60")
 $dGpuPattern    = $DGPU_WHITELIST -join "|"
 
-# winget 不可用时，从 python.org 下载的回退版本
+# winget 不可用时，从 python.org 下载的回退版本（需要 Python >= 3.10）
 $PYTHON_FALLBACK_VERSION = "3.12.9"
 $PYTHON_INSTALLER_URL    = "https://www.python.org/ftp/python/$PYTHON_FALLBACK_VERSION/python-$PYTHON_FALLBACK_VERSION-amd64.exe"
+$PYTHON_MIN_MAJOR = 3
+$PYTHON_MIN_MINOR = 10
 
 # ============================================================
 # 工具函数
 # ============================================================
 
-function Find-Python312 {
+function Find-PythonMin {
     <#
-    .SYNOPSIS 在 PATH 中查找 Python 3.12.x，返回可用命令字符串；未找到返回 $null
+    .SYNOPSIS 在 PATH 中查找 Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR，返回可用命令字符串；未找到返回 $null
     #>
     foreach ($cmd in @("python", "python3")) {
         try {
             $ver = "$(& $cmd --version 2>&1)"
-            if ($ver -match "Python 3\.12\.\d+") { return $cmd }
+            if ($ver -match "Python (\d+)\.(\d+)\.(\d+)") {
+                $maj = [int]$Matches[1]; $min = [int]$Matches[2]
+                if ($maj -gt $PYTHON_MIN_MAJOR -or ($maj -eq $PYTHON_MIN_MAJOR -and $min -ge $PYTHON_MIN_MINOR)) {
+                    return $cmd
+                }
+            }
         } catch {}
     }
     # py launcher 方式（Windows Python Launcher）
-    try {
-        $ver = "$(& py -3.12 --version 2>&1)"
-        if ($ver -match "Python 3\.12\.\d+") { return "py -3.12" }
-    } catch {}
+    foreach ($pyver in @("3.13","3.12","3.11","3.10")) {
+        try {
+            $ver = "$(& py -$pyver --version 2>&1)"
+            if ($ver -match "Python (\d+)\.(\d+)\.(\d+)") {
+                $maj = [int]$Matches[1]; $min = [int]$Matches[2]
+                if ($maj -gt $PYTHON_MIN_MAJOR -or ($maj -eq $PYTHON_MIN_MAJOR -and $min -ge $PYTHON_MIN_MINOR)) {
+                    return "py -$pyver"
+                }
+            }
+        } catch {}
+    }
     return $null
 }
 
@@ -153,13 +167,13 @@ Write-Host "✅ 阶段 1 通过"
 Write-Host ""
 Write-Host "=== 阶段 2：Python 3.12.x 环境检查 ========================="
 
-$pythonCmd = Find-Python312
+$pythonCmd = Find-PythonMin
 
 if ($pythonCmd) {
     $verStr = Get-PythonVersion $pythonCmd
-    Write-Host "✅ [PASS] Python 3.12：$verStr（命令：$pythonCmd）"
+    Write-Host "✅ [PASS] Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR：$verStr（命令：$pythonCmd）"
 } else {
-    Write-Host "⚠️  [WARN] 未找到 Python 3.12.x，尝试自动安装..."
+    Write-Host "⚠️  [WARN] 未找到 Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR，尝试自动安装 $PYTHON_FALLBACK_VERSION..."
     Write-Host ""
     $installed = $false
 
@@ -212,18 +226,18 @@ if ($pythonCmd) {
     # ── 刷新 PATH 并重新检测 ───────────────────────────────
     if ($installed) {
         Write-Host ""
-        Write-Host "  刷新 PATH 并重新检测 Python 3.12..."
+        Write-Host "  刷新 PATH 并重新检测 Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR..."
         Refresh-Path
-        $pythonCmd = Find-Python312
+        $pythonCmd = Find-PythonMin
     }
 
     if ($pythonCmd) {
         $verStr = Get-PythonVersion $pythonCmd
-        Write-Host "✅ [PASS] Python 3.12 安装成功：$verStr（命令：$pythonCmd）"
+        Write-Host "✅ [PASS] Python 安装成功：$verStr（命令：$pythonCmd）"
     } else {
         Write-Host ""
-        Write-Host "❌ [FAIL] Python 3.12.x 安装后仍未检测到。"
-        Write-Host "   请关闭当前终端后重新打开，或手动安装："
+        Write-Host "❌ [FAIL] Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR 安装后仍未检测到。"
+        Write-Host "   请关闭当前终端后重新打开，或手动安装 Python $PYTHON_FALLBACK_VERSION："
         Write-Host "   https://www.python.org/downloads/release/python-3129/"
         Write-Host "   安装时勾选 'Add Python to PATH' 并选择 'Install for all users'"
         exit 1

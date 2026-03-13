@@ -430,13 +430,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def _check_python_version() -> None:
-    """检查 Python 版本，若不是 3.12.x 则打印警告。"""
+    """检查 Python 版本，若低于 3.10 则打印警告。"""
     major, minor = sys.version_info[:2]
-    ver_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    if major == 3 and minor == 12:
-        print(f"[python] ✓ Python {ver_str}（满足 3.12.x 要求）")
+    ver_str = f"{major}.{minor}.{sys.version_info.micro}"
+    if major > 3 or (major == 3 and minor >= 10):
+        print(f"[python] ✓ Python {ver_str}（满足 >= 3.10 要求）")
     else:
-        print(f"[python] ⚠ 当前 Python 版本：{ver_str}，建议使用 Python 3.12.x", file=sys.stderr)
+        print(f"[python] ⚠ 当前 Python 版本：{ver_str}，需要 Python >= 3.10", file=sys.stderr)
         print(f"[python]   可运行以下命令自动安装：", file=sys.stderr)
         print(f"[python]   powershell -ExecutionPolicy Bypass -File \"{SCRIPT_DIR / 'check_platform.ps1'}\"", file=sys.stderr)
 

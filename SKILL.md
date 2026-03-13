@@ -152,7 +152,7 @@ python scripts/setup_ov_model.py --hf-mirror
 | **A** | Intel 白名单独显 | Arc A770（16 GB）或 Arc B580（12 GB），CPU 型号不限 |
 | **B** | Intel iGPU 平台 | CPU 为 MTL/LNL/ARL/PTL + Intel iGPU + 系统内存 > 16 GB |
 
-**Python：** 3.12.x（未安装时脚本自动通过 winget 或官方安装包安装）
+**Python：** >= 3.10（未安装时脚本自动安装 3.12.x 最新版）
 
 ### 步骤 0：运行环境检查脚本
 
