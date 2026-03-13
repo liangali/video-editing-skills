@@ -42,11 +42,17 @@ $igpu = $allGpus |
     Select-Object -First 1
 
 # CPU 平台代号
+# 实际 WMI 名称格式：Intel(R) Core(TM) Ultra <档位> <型号><后缀>
+# 例如："Intel(R) Core(TM) Ultra 7 155H" / "Intel(R) Core(TM) Ultra 9 285K"
+# 旧写法 "Core Ultra [1]\d{2}" 有两个问题：
+#   1. Core 和 Ultra 之间有 (TM)，字面 "Core Ultra" 无法匹配
+#   2. 缺少档位数字（5/7/9），型号数字位置错位
+# 修复：改为 "Ultra \d+\s+<型号前缀>" 跳过档位数字和 (TM)
 $platform = $null
-if     ($cpu -match "Core Ultra [1]\d{2}")  { $platform = "MTL" }
-elseif ($cpu -match "Core Ultra 2\d{2}V")   { $platform = "LNL" }
-elseif ($cpu -match "Core Ultra 2\d{2}")    { $platform = "ARL" }
-elseif ($cpu -match "Core Ultra [3]\d{2}")  { $platform = "PTL" }
+if     ($cpu -match "Ultra \d+\s+1\d{2}")                                            { $platform = "MTL" }  # 1xx：165H/155H/125H 等
+elseif ($cpu -match "Ultra \d+\s+2\d{2}V")                                           { $platform = "LNL" }  # 2xxV：258V/288V 等
+elseif ($cpu -match "Ultra \d+\s+2\d{2}" -and $cpu -notmatch "Ultra \d+\s+2\d{2}V") { $platform = "ARL" }  # 2xx（非V）：285K/285H/265K 等
+elseif ($cpu -match "Ultra \d+\s+3\d{2}")                                            { $platform = "PTL" }  # 3xx：未来 PTL 型号
 
 # ────────────────────────────────────────────────────────────
 # 条件判断
