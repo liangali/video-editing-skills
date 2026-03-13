@@ -39,6 +39,7 @@ setup_ov_model.py - 从 HuggingFace 下载 OpenVINO/Qwen2.5-VL-7B-Instruct-int4-
 import argparse
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -63,6 +64,59 @@ DEFAULT_OUTPUT_NAME = "Qwen2.5-VL-7B-Instruct-int4"
 
 # HF 镜像站地址（国内网络推荐使用）
 HF_MIRROR_URL = "https://hf-mirror.com"
+
+# 虚拟环境所需依赖（最小集合）
+VENV_PACKAGES = ["huggingface_hub"]
+
+
+# ---------------------------------------------------------------------------
+# 虚拟环境管理
+# ---------------------------------------------------------------------------
+
+def _get_venv_python() -> "Path | None":
+    """返回 <SKILL_DIR>/.venv 中的 Python 可执行路径，不存在返回 None。"""
+    venv_dir = SKILL_DIR / ".venv"
+    for candidate in [
+        venv_dir / "Scripts" / "python.exe",  # Windows
+        venv_dir / "bin" / "python",           # Linux / macOS
+        venv_dir / "bin" / "python3",
+    ]:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _ensure_venv(packages: list) -> Path:
+    """
+    确保 <SKILL_DIR>/.venv 存在并安装了指定包列表。
+    不存在时自动用当前系统 Python 创建，然后 pip install 所需包。
+    返回 venv 内的 Python 可执行路径。
+    """
+    venv_dir = SKILL_DIR / ".venv"
+    venv_python = _get_venv_python()
+
+    if venv_python is None:
+        print(f"[venv] 虚拟环境不存在，正在创建：{venv_dir}")
+        subprocess.run(
+            [sys.executable, "-m", "venv", str(venv_dir)],
+            check=True,
+        )
+        venv_python = _get_venv_python()
+        if venv_python is None:
+            raise RuntimeError(f"创建虚拟环境后仍找不到 Python 可执行文件：{venv_dir}")
+        print(f"[venv] ✓ 虚拟环境已创建：{venv_dir}")
+    else:
+        print(f"[venv] 已找到虚拟环境：{venv_python}")
+
+    if packages:
+        print(f"[venv] 安装依赖：{', '.join(packages)}")
+        subprocess.run(
+            [str(venv_python), "-m", "pip", "install", "--quiet", *packages],
+            check=True,
+        )
+        print(f"[venv] ✓ 依赖安装完成")
+
+    return venv_python
 
 
 # ---------------------------------------------------------------------------
@@ -327,6 +381,21 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    # ------------------------------------------------------------------
+    # 虚拟环境检查：确保 .venv 存在并安装所需依赖
+    # 若当前 Python 不是 .venv 中的 Python，则用 .venv Python 重新启动本脚本
+    # ------------------------------------------------------------------
+    try:
+        venv_python = _ensure_venv(VENV_PACKAGES)
+    except Exception as exc:
+        print(f"[venv] 警告：无法创建/配置虚拟环境，将使用系统 Python：{exc}", file=sys.stderr)
+        venv_python = Path(sys.executable)
+
+    if venv_python.resolve() != Path(sys.executable).resolve():
+        print(f"[venv] 切换至虚拟环境 Python 重新运行：{venv_python}")
+        result = subprocess.run([str(venv_python), str(Path(__file__).resolve())] + sys.argv[1:])
+        return result.returncode
+
     args = parse_args()
 
     # 确定 HF_ENDPOINT：--no-mirror 时不使用镜像；否则命令行参数 > 环境变量 > 默认镜像
