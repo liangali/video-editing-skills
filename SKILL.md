@@ -143,39 +143,43 @@ python scripts/setup_ov_model.py --hf-mirror
 > - **禁止**跳过检查、假设检查通过、或在未执行脚本的情况下继续。
 > - 只有脚本以退出码 0 结束，才能进入阶段 1。
 
-本技能依赖 Intel OpenVINO 硬件加速推理，需满足以下**任一**条件：
+本技能需满足以下**硬件条件之一** + **Python 3.12.x**，检查脚本会自动完成所有验证和安装：
+
+**硬件（满足任一）：**
 
 | | 条件 | 要求 |
 |-|------|------|
 | **A** | Intel 白名单独显 | Arc A770（16 GB）或 Arc B580（12 GB），CPU 型号不限 |
 | **B** | Intel iGPU 平台 | CPU 为 MTL/LNL/ARL/PTL + Intel iGPU + 系统内存 > 16 GB |
 
-### 步骤 0：运行平台检查脚本
+**Python：** 3.12.x（未安装时脚本自动通过 winget 或官方安装包安装）
 
-检查脚本路径：**`<SKILL_DIR>\scripts\check_platform.ps1`**
+### 步骤 0：运行环境检查脚本
 
-```powershell
-powershell -ExecutionPolicy Bypass -File "<SKILL_DIR>\scripts\check_platform.ps1"
-```
-
-实际路径替换示例：
 ```powershell
 powershell -ExecutionPolicy Bypass -File "E:\data\agentkit\skills\video-editing-skills\scripts\check_platform.ps1"
 ```
+
+**脚本执行的两个阶段：**
+
+| 阶段 | 内容 | 失败行为 |
+|------|------|----------|
+| **阶段 1：硬件** | 检测独显白名单 / iGPU 平台 | 立即 exit 1，不继续 |
+| **阶段 2：Python** | 检测 Python 3.12.x；未找到则自动安装（winget → 官方安装包） | 安装失败则 exit 1 |
 
 ### 结果判断规则（AI 必须严格遵守）
 
 | 脚本退出码 | 输出特征 | AI 必须执行的动作 |
 |-----------|---------|------------------|
-| **0** | 包含"平台检查通过" | 继续进入阶段 1 |
-| **1** | 包含 `❌ [FAIL]` 和"禁止执行" | **立即终止。将失败原因原文转述给用户，不执行任何后续步骤，不询问是否继续** |
-| 脚本报错/无法运行 | 任何异常输出 | **视为检查失败，立即终止，向用户说明脚本无法执行** |
+| **0** | 末行含"所有检查通过" | 继续进入阶段 1 |
+| **1** | 含 `❌ [FAIL]` | **立即终止。将失败原因原文转述给用户，不执行任何后续步骤，不询问是否继续** |
+| 脚本报错/无法运行 | 任何异常 | **视为检查失败，立即终止** |
 
 **[AI 行为约束]** 退出码为 1 时：
 1. 将脚本输出的 `❌ [FAIL]` 行原文转述给用户
 2. **不输出任何后续步骤，不询问是否继续，直接终止本次技能执行**
 
-> **扩展独显白名单：** 编辑 `scripts\check_platform.ps1`，在 `$DGPU_WHITELIST` 数组中追加型号关键字即可，无需修改 SKILL.md。
+> **自定义配置：** 编辑 `scripts\check_platform.ps1` 顶部的 `$DGPU_WHITELIST`（扩展独显白名单）或 `$PYTHON_FALLBACK_VERSION`（指定离线安装的 Python 版本）。
 
 **✅ 检查点 0→1（硬性门控）：** 脚本退出码为 0 时方可进入阶段 1；退出码为 1 则技能执行到此为止。
 
