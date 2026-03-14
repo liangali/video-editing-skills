@@ -139,15 +139,65 @@ def _find_flama_dir() -> Path | None:
     return None
 
 
-def _verify_model_dir(model_dir: Path) -> bool:
+# OpenVINO 模型目录完整性阈值
+# Qwen2.5-VL-7B-Instruct-int4-ov 完整下载共 27 个条目（含子文件夹）
+MODEL_MIN_XML_FILES    = 1   # 至少需要的 .xml 文件数
+MODEL_MIN_BIN_FILES    = 1   # 至少需要的 .bin 文件数
+MODEL_MIN_TOTAL_ENTRIES = 27  # 至少需要的总条目数（文件 + 子文件夹；小于此值视为下载不完整）
+
+
+def _inspect_model_dir(model_dir: Path) -> dict:
     """
-    简单验证 OpenVINO 模型目录是否有效：
-    目录存在 + 含至少一个 .xml 文件。
+    检查 OpenVINO 模型目录的完整性，返回详细报告 dict：
+      {
+        "exists":      bool,   # 目录是否存在
+        "xml_count":   int,    # .xml 文件数
+        "bin_count":   int,    # .bin 文件数
+        "total_entries": int,  # 总条目数（文件 + 子文件夹，递归）
+        "valid":       bool,   # 是否满足最低要求
+        "reason":      str,    # 不满足时的原因描述
+      }
     """
     if not model_dir.is_dir():
-        return False
-    xml_files = list(model_dir.glob("*.xml"))
-    return len(xml_files) > 0
+        return {
+            "exists": False, "xml_count": 0, "bin_count": 0,
+            "total_entries": 0, "valid": False,
+            "reason": f"目录不存在：{model_dir}",
+        }
+
+    all_entries  = list(model_dir.rglob("*"))          # 文件 + 子文件夹
+    all_files    = [e for e in all_entries if e.is_file()]
+    xml_files    = [f for f in all_files if f.suffix.lower() == ".xml"]
+    bin_files    = [f for f in all_files if f.suffix.lower() == ".bin"]
+    total_entries = len(all_entries)
+    xml_count    = len(xml_files)
+    bin_count    = len(bin_files)
+
+    reasons = []
+    if xml_count < MODEL_MIN_XML_FILES:
+        reasons.append(f".xml 文件数 {xml_count} < 最低要求 {MODEL_MIN_XML_FILES}")
+    if bin_count < MODEL_MIN_BIN_FILES:
+        reasons.append(f".bin 文件数 {bin_count} < 最低要求 {MODEL_MIN_BIN_FILES}")
+    if total_entries < MODEL_MIN_TOTAL_ENTRIES:
+        reasons.append(f"总条目数 {total_entries} < 最低要求 {MODEL_MIN_TOTAL_ENTRIES}（含文件夹；下载不完整）")
+
+    valid = len(reasons) == 0
+    return {
+        "exists": True,
+        "xml_count": xml_count,
+        "bin_count": bin_count,
+        "total_entries": total_entries,
+        "valid": valid,
+        "reason": "；".join(reasons) if reasons else "",
+    }
+
+
+def _verify_model_dir(model_dir: Path) -> bool:
+    """
+    验证 OpenVINO 模型目录是否完整有效。
+    需满足：目录存在 + .xml 文件 >= 1 + .bin 文件 >= 1 + 总文件数 >= MODEL_MIN_TOTAL_FILES。
+    """
+    return _inspect_model_dir(model_dir)["valid"]
 
 
 def _download_model(
@@ -267,18 +317,35 @@ def setup_ov_model(
 
     # 仅校验模式
     if check_only:
-        if _verify_model_dir(output_dir):
-            print(f"[model] ✓ 模型目录已存在且有效：{output_dir}")
+        report = _inspect_model_dir(output_dir)
+        if report["valid"]:
+            print(f"[model] ✓ 模型目录完整有效：{output_dir}")
+            print(f"[model]   .xml={report['xml_count']}  .bin={report['bin_count']}  总条目={report['total_entries']}")
             return True
         else:
-            print(f"[model] ✗ 模型目录不存在或无效：{output_dir}")
+            print(f"[model] ✗ 模型目录不完整：{output_dir}")
+            print(f"[model]   .xml={report['xml_count']}  .bin={report['bin_count']}  总条目={report['total_entries']}")
+            if report["reason"]:
+                print(f"[model]   原因：{report['reason']}")
+            print(f"[model]   建议：python setup_ov_model.py --force --flama-dir \"{flama_dir}\"")
             return False
 
-    # 已存在且有效时跳过
-    if not force and _verify_model_dir(output_dir):
-        print(f"[model] 模型已存在且有效，跳过下载。（{output_dir}）")
-        _update_config_json(flama_dir, config_model_path)
-        return True
+    # 检查已有目录的完整性
+    if not force:
+        report = _inspect_model_dir(output_dir)
+        if report["valid"]:
+            print(f"[model] 模型已存在且完整，跳过下载。（{output_dir}）")
+            print(f"[model]   .xml={report['xml_count']}  .bin={report['bin_count']}  总条目={report['total_entries']}")
+            _update_config_json(flama_dir, config_model_path)
+            return True
+        elif report["exists"]:
+            # 目录存在但条目数不足，删除后重新下载
+            print(f"[model] ⚠ 模型目录存在但条目不足（总条目={report['total_entries']} < {MODEL_MIN_TOTAL_ENTRIES}），将清除后重新下载。")
+            print(f"[model]   .xml={report['xml_count']}  .bin={report['bin_count']}  总条目={report['total_entries']}")
+            if report["reason"]:
+                print(f"[model]   原因：{report['reason']}")
+            shutil.rmtree(output_dir, ignore_errors=True)
+            print(f"[model]   已清除不完整目录：{output_dir}")
 
     if force and output_dir.exists():
         print(f"[model] --force 模式：删除已有目录 {output_dir}")
