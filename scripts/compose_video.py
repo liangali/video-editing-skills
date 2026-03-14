@@ -261,10 +261,10 @@ def extract_clip(
     cmd = [
         ffmpeg,
         "-y",
-        "-ss",
-        f"{in_point}",
         "-i",
         str(source_video),
+        "-ss",
+        f"{in_point}",
         "-t",
         f"{duration}",
         "-c",

@@ -339,7 +339,10 @@ dir "<VIDEO_DIR>\*.mp4" "<VIDEO_DIR>\*.mov" "<VIDEO_DIR>\*.avi" "<VIDEO_DIR>\*.m
 
 ### 步骤 2.3 运行 FLAMA 分析
 
-**关键规则：** 仅在步骤 2.2 通过后执行；始终重新运行，绝不复用已有的 output_vlm.json；运行前必须确认当前工作区文件夹下没有output_vlm.json。
+**关键规则：** 
+1. 仅在步骤 2.2 通过后执行；始终重新运行，绝不复用已有的 output_vlm.json；运行前必须确认当前工作区文件夹下没有output_vlm.json。
+2. 必须cd到flama路径，cd "<SKILL_DIR>\bin\flama"，否则flama.exe无法工作
+
 
 ```bash
 cd /d "<SKILL_DIR>\bin\flama"
@@ -571,7 +574,7 @@ flama.exe --video_dir=<VIDEO_DIR> --mode=hw --json_file=<WORKSPACE_DIR>\output_v
 3. ☐ 所有 `source_video` 路径指向 `<VIDEO_DIR>` 中实际存在的文件
 4. ☐ 无重复的 `(source_video, source_segment_id)` 组合
 5. ☐ `audio_design.background_music.file_path` 是绝对路径且文件存在
-6. ☐ 片段总时长与 `target_duration_seconds` 偏差不超过 ±20%
+cc
 
 **✅ 检查点 3→4：** storyboard.json 已通过上述 6 项验证；BGM 文件路径有效。
 
@@ -580,6 +583,33 @@ flama.exe --video_dir=<VIDEO_DIR> --mode=hw --json_file=<WORKSPACE_DIR>\output_v
 ## 阶段 4：合成
 
 **执行前确认：** 已通过步骤 1.5 检查，`<SKILL_DIR>\bin\ffmpeg.exe` 存在；否则先运行 `setup_resources.py`。
+
+### 步骤 4.0 ffmpeg 执行前的时长校验（硬性门控，不得跳过）
+
+> **[AI 执行指令]** 在调用 compose_video.py 之前，必须重新读取 storyboard.json 并完成以下校验。禁止假设步骤 3.5 的检查结果依然有效。
+
+**从已写入的 storyboard.json 重新计算片段总时长：**
+
+```python
+import json
+with open("<WORKSPACE_DIR>/storyboard.json", encoding="utf-8") as f:
+    sb = json.load(f)
+
+target         = sb["storyboard_metadata"]["target_duration_seconds"]  # 默认 30
+total_duration = sum(c["timecode"]["duration"] for c in sb["clips"])
+threshold      = target * 0.20
+deviation      = abs(total_duration - target)
+
+print(f"target={target}s  total={total_duration:.1f}s  deviation={deviation:.1f}s  threshold={threshold:.1f}s")
+print("✅ 通过" if deviation <= threshold else f"❌ 不通过（偏差 {deviation:.1f}s > 阈值 {threshold:.1f}s）")
+```
+
+**判断规则：**
+
+| 结果 | AI 必须执行的动作 |
+|------|-----------------|
+| `deviation ≤ threshold` | 继续执行步骤 4.1 |
+| `deviation > threshold` | **禁止执行 compose_video.py**。返回步骤 3.5，重新调整片段时间码直到满足条件，重新写入 storyboard.json 后再回到本步骤重新校验 |
 
 ### 步骤 4.1 运行 compose_video.py
 
@@ -615,6 +645,39 @@ python "<SKILL_DIR>\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\stor
 示例：日常诗意瞬间_30s_bgm_ClaudeOpus.mp4
 ```
 
+### 步骤 4.2 输出前的最终时长校验（交付给用户前必做）
+
+> **[AI 执行指令]** 在将最终视频路径告知用户之前，必须用 ffprobe 测量实际视频时长并完成以下校验。任何情况下不得跳过。
+
+**测量实际视频时长：**
+
+```powershell
+$videoFile = "<WORKSPACE_DIR>\<theme>_<duration>s_bgm_<cloud_llm_name>.mp4"
+$target    = <target_duration_seconds>   # 从 storyboard.json 读取
+$threshold = $target * 0.20
+
+$actual = [double]( & "<SKILL_DIR>\bin\ffprobe.exe" `
+    -v error -show_entries format=duration `
+    -of default=noprint_wrappers=1:nokey=1 `
+    "$videoFile" )
+
+$deviation = [math]::Abs($actual - $target)
+Write-Host "target=${target}s  actual=$([math]::Round($actual,1))s  deviation=$([math]::Round($deviation,1))s  threshold=$([math]::Round($threshold,1))s"
+if ($deviation -le $threshold) {
+    Write-Host "✅ 最终视频时长校验通过，可交付给用户。"
+} else {
+    Write-Host "❌ 最终视频时长偏差超过 ±20%，不得直接交付。"
+}
+```
+
+**判断规则：**
+
+| 结果 | AI 必须执行的动作 |
+|------|-----------------|
+| `deviation ≤ threshold` | 向用户报告视频路径和实际时长，任务完成 |
+| `deviation > threshold` | **禁止交付**。告知用户校验未通过，返回步骤 3.2 重新筛选片段并调整时间码，重新生成 storyboard.json，重新合成，最多重试 **2 次** |
+| 超过 2 次重试仍不通过 | 停止重试，向用户说明情况（视频总素材时长不足或质量问题），提示用户补充素材 |
+
 ---
 
 ## 硬性规则总结
@@ -631,6 +694,9 @@ python "<SKILL_DIR>\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\stor
 | **工作区输出** | 所有文件必须在 `<WORKSPACE_DIR>` 内 |
 | **必需元数据** | theme、target_duration_seconds、cloud_llm_name 必须存在 |
 | **BGM 绝对路径** | `audio_design.background_music.file_path` 必须是绝对路径 |
+| **分镜时长偏差 ≤ 20%（写入前硬性门控）** | 写入 storyboard.json 前必须计算片段总时长偏差；超过 `target × 20%` 时**禁止写入**，必须先调整片段直到满足条件 |
+| **ffmpeg 执行前时长校验（步骤 4.0 硬性门控）** | 调用 compose_video.py 前必须重新读取 storyboard.json 验证总时长偏差 ≤ 20%；不通过则返回步骤 3.5 调整 |
+| **最终交付前时长校验（步骤 4.2 硬性门控）** | 向用户报告结果前必须用 ffprobe 测量实际视频时长，偏差 > `target × 20%` 时**禁止交付**，最多重试 2 次后提示用户补充素材 |
 
 ---
 
