@@ -402,6 +402,8 @@ def add_bgm_to_video(
         filter_complex = f"[1:a]{bgm_filter}[a]"
         map_audio = ["-map", "[a]"]
 
+    # Explicit -t so the muxer writes correct duration metadata; otherwise with
+    # -stream_loop -1 + -shortest the container duration can be wrong (e.g. 2+ min).
     cmd = [
         ffmpeg,
         "-y",
@@ -426,7 +428,8 @@ def add_bgm_to_video(
         "48000",
         "-ac",
         "2",
-        "-shortest",
+        "-t",
+        str(duration),
         str(output_video),
     ]
     run_cmd(cmd, dry_run=dry_run)
