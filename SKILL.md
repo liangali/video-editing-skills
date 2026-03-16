@@ -97,10 +97,6 @@ python "<SKILL_DIR>\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\stor
 python -m venv .venv
 .venv\Scripts\activate
 python.exe -m pip install --upgrade pip
-
-# Linux / macOS
-python3 -m venv .venv
-source .venv/bin/activate
 ```
 
 **安装模型下载依赖**（仅当需要运行 setup_ov_model.py 时执行，只下载预转换好的 OpenVINO 模型）：
@@ -117,14 +113,6 @@ $env:HF_ENDPOINT = "https://hf-mirror.com"
 
 # Windows - 永久写入用户环境变量
 [System.Environment]::SetEnvironmentVariable("HF_ENDPOINT", "https://hf-mirror.com", "User")
-```
-
-```bash
-# Linux / macOS - 仅当前会话
-export HF_ENDPOINT=https://hf-mirror.com
-
-# Linux / macOS - 永久（写入 ~/.bashrc 或 ~/.zshrc）
-echo 'export HF_ENDPOINT=https://hf-mirror.com' >> ~/.bashrc
 ```
 
 > 常用镜像站：`https://hf-mirror.com`（国内推荐）、`https://modelscope.cn`

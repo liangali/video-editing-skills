@@ -78,8 +78,6 @@ def _get_venv_python() -> "Path | None":
     venv_dir = SKILL_DIR / ".venv"
     for candidate in [
         venv_dir / "Scripts" / "python.exe",  # Windows
-        venv_dir / "bin" / "python",           # Linux / macOS
-        venv_dir / "bin" / "python3",
     ]:
         if candidate.exists():
             return candidate
