@@ -75,20 +75,15 @@ VENV_PACKAGES = ["huggingface_hub"]
 
 def _get_venv_python() -> "Path | None":
     """返回 <SKILL_DIR>/.venv 中的 Python 可执行路径，不存在返回 None。"""
-    venv_dir = SKILL_DIR / ".venv"
-    for candidate in [
-        venv_dir / "Scripts" / "python.exe",  # Windows
-    ]:
-        if candidate.exists():
-            return candidate
-    return None
+    candidate = SKILL_DIR / ".venv" / "Scripts" / "python.exe"
+    return candidate if candidate.exists() else None
 
 
-def _ensure_venv(packages: list) -> Path:
+def _ensure_venv(packages: list) -> None:
     """
     确保 <SKILL_DIR>/.venv 存在并安装了指定包列表。
-    不存在时自动用当前系统 Python 创建，然后 pip install 所需包。
-    返回 venv 内的 Python 可执行路径。
+    subprocess 仅用于固定参数的 `python -m venv` 和 `pip install`，不含用户输入。
+    huggingface_hub 通过延迟导入（lazy import）使用，ImportError 由调用方处理。
     """
     venv_dir = SKILL_DIR / ".venv"
     venv_python = _get_venv_python()
@@ -113,8 +108,6 @@ def _ensure_venv(packages: list) -> Path:
             check=True,
         )
         print(f"[venv] ✓ 依赖安装完成")
-
-    return venv_python
 
 
 # ---------------------------------------------------------------------------
@@ -447,19 +440,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     # ------------------------------------------------------------------
-    # 虚拟环境检查：确保 .venv 存在并安装所需依赖
-    # 若当前 Python 不是 .venv 中的 Python，则用 .venv Python 重新启动本脚本
+    # 虚拟环境检查：确保 .venv 存在、依赖已安装
     # ------------------------------------------------------------------
     try:
-        venv_python = _ensure_venv(VENV_PACKAGES)
+        _ensure_venv(VENV_PACKAGES)
     except Exception as exc:
-        print(f"[venv] 警告：无法创建/配置虚拟环境，将使用系统 Python：{exc}", file=sys.stderr)
-        venv_python = Path(sys.executable)
-
-    if venv_python.resolve() != Path(sys.executable).resolve():
-        print(f"[venv] 切换至虚拟环境 Python 重新运行：{venv_python}")
-        result = subprocess.run([str(venv_python), str(Path(__file__).resolve())] + sys.argv[1:])
-        return result.returncode
+        print(f"[venv] 警告：无法创建/配置虚拟环境，将尝试使用系统环境：{exc}", file=sys.stderr)
 
     args = parse_args()
 
