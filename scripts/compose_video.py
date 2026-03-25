@@ -214,10 +214,15 @@ def quote_concat_path(path: Path) -> str:
 
 
 def find_default_font() -> Optional[Path]:
-    script_dir = Path(__file__).resolve().parent
-    resource_font = script_dir.parent / "resource" / "font.ttf"
-    if resource_font.exists():
-        return normalize_filter_path(resource_font)
+    system_font_candidates = [
+        Path(r"C:\Windows\Fonts\msyh.ttc"),       # 微软雅黑
+        Path(r"C:\Windows\Fonts\simhei.ttf"),      # 黑体
+        Path(r"C:\Windows\Fonts\simsun.ttc"),      # 宋体
+    ]
+    for candidate in system_font_candidates:
+        if candidate.exists():
+            print(f"Info: Using system font: {candidate}")
+            return candidate
     return None
 
 
