@@ -205,10 +205,11 @@ def analyze_segment_vlm(
         **generation_config,
     )
 
-    result = str(response).strip()
+    result = str(response).strip() if response else ""
     for term in ["<|im_end|>", "<|endoftext|>"]:
         result = result.replace(term, "")
-    return result.strip()
+    result = result.strip()
+    return result if result else "（模型未生成有效描述）"
 
 
 # ---------------------------------------------------------------------------
@@ -342,7 +343,8 @@ def main() -> int:
     # 逐视频处理
     results = []
     for i, video_path in enumerate(videos):
-        print(f"\n[{i+1}/{len(videos)}] {video_path.name}")
+        pct = int((i / len(videos)) * 100)
+        print(f"\n[{i+1}/{len(videos)}] {pct}% {video_path.name}")
         result = process_video(
             video_path=video_path,
             pipeline=pipeline,

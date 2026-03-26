@@ -67,8 +67,11 @@ def main() -> int:
     # 3. 保存用户请求
     if args.user_request:
         user_input_file = workspace / "user_input.txt"
-        user_input_file.write_text(args.user_request, encoding="utf-8")
-        print(f"[准备] 用户请求已保存：{user_input_file}")
+        try:
+            user_input_file.write_text(args.user_request, encoding="utf-8")
+            print(f"[准备] 用户请求已保存：{user_input_file}")
+        except OSError as e:
+            print(f"[准备] 警告：无法保存用户请求：{e}", file=sys.stderr)
 
     # 4. 检查 ffmpeg
     if args.check_ffmpeg:
