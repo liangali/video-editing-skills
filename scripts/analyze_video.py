@@ -187,20 +187,27 @@ def analyze_segment_vlm(
     prompt: str,
     max_new_tokens: int = 100,
 ) -> str:
-    """使用 VLM 分析一组帧，返回文本描述。"""
+    """
+    使用 VLM 视频模式分析一组帧，返回文本描述。
+
+    使用 videos= 参数（而非 images=）传入帧序列，
+    让 Qwen2.5-VL 以视频模式处理，保留帧间时序信息。
+    模型内部会按 temporal_patch_size=2 将连续帧配对，
+    提取运动/变化等动态特征。
+    """
     import openvino as ov
 
-    image_tensors = []
+    frame_tensors = []
     for img in frames:
         rgb = img.convert("RGB")
         arr = np.array(rgb, dtype=np.uint8)
-        image_tensors.append(ov.Tensor(arr))
+        frame_tensors.append(ov.Tensor(arr))
 
     generation_config = {"repetition_penalty": 1.2}
 
     response = pipeline.generate(
         prompt,
-        images=image_tensors if image_tensors else None,
+        videos=frame_tensors if frame_tensors else None,
         max_new_tokens=max_new_tokens,
         **generation_config,
     )
@@ -289,8 +296,8 @@ def parse_args() -> argparse.Namespace:
                         help="推理设备（默认：GPU）")
     parser.add_argument("--seg-duration", type=float, default=3.0,
                         help="段时长秒数（默认：3.0）")
-    parser.add_argument("--frames-per-seg", type=int, default=4,
-                        help="每段提取帧数（默认：4）")
+    parser.add_argument("--frames-per-seg", type=int, default=8,
+                        help="每段提取帧数（默认：8，配合视频模式 temporal_patch_size=2）")
     parser.add_argument("--scale", type=float, default=0.25,
                         help="帧缩放比例（默认：0.25）")
     parser.add_argument("--max-tokens", type=int, default=100,
