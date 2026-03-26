@@ -11,6 +11,13 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 
+VALID_XFADE_TRANSITIONS = {
+    "fade", "dissolve", "fadeblack", "fadewhite",
+    "smoothleft", "smoothright", "smoothup", "smoothdown",
+    "circleopen", "circleclose",
+}
+
+
 @dataclass
 class ClipSpec:
     clip_id: int
@@ -20,6 +27,8 @@ class ClipSpec:
     out_point: float
     duration: float
     subtitle: str
+    transition: str = ""
+    transition_duration: float = 0.5
 
 
 @dataclass
@@ -163,6 +172,13 @@ def load_storyboard(
                 f"clip {idx} 的 source_video 文件不存在：{source_path}"
             )
 
+        trans_obj = clip.get("transition") or {}
+        trans_type = str(trans_obj.get("type", "")).strip().lower()
+        trans_dur = float(trans_obj.get("duration", 0.5))
+        if trans_type and trans_type not in VALID_XFADE_TRANSITIONS:
+            print(f"Warning: clip {idx} transition '{trans_type}' not supported, ignoring.")
+            trans_type = ""
+
         specs.append(
             ClipSpec(
                 clip_id=int(clip.get("clip_id", idx)),
@@ -172,6 +188,8 @@ def load_storyboard(
                 out_point=out_point,
                 duration=duration,
                 subtitle=subtitle,
+                transition=trans_type,
+                transition_duration=trans_dur,
             )
         )
 
@@ -596,6 +614,77 @@ def transcode_clip(
     run_cmd(cmd, dry_run=dry_run)
 
 
+def concat_videos_with_xfade(
+    ffmpeg: str,
+    input_videos: List[Path],
+    clips: List[ClipSpec],
+    output_video: Path,
+    dry_run: bool,
+) -> None:
+    """使用 xfade 转场效果拼接视频片段。
+
+    每个 clip 的 transition 字段指定该片段到下一个片段之间的转场类型。
+    最后一个片段的 transition 会被忽略（没有下一个片段可过渡）。
+    音频使用 acrossfade 同步过渡。
+    """
+    n = len(input_videos)
+    if n < 2:
+        raise ValueError("xfade requires at least 2 clips")
+
+    inputs = []
+    for video in input_videos:
+        inputs.extend(["-i", str(video)])
+
+    # 构建视频 xfade 链
+    video_filters = []
+
+    # 统一时基和帧率
+    for i in range(n):
+        video_filters.append(f"[{i}:v]settb=AVTB,fps=30[v{i}]")
+
+    # 逐对构建 xfade
+    current_offset = 0.0
+    v_label = "v0"
+
+    for i in range(n - 1):
+        clip = clips[i]
+        trans_type = clip.transition or "fade"
+        trans_dur = clip.transition_duration
+
+        # 确保转场时长不超过任一片段时长的一半
+        max_dur = min(clip.duration, clips[i + 1].duration) / 2
+        if trans_dur > max_dur:
+            trans_dur = round(max_dur, 2)
+
+        current_offset += clip.duration - trans_dur
+
+        next_v = f"v{i + 1}"
+        out_v = f"xf{i}" if i < n - 2 else "vout"
+
+        video_filters.append(
+            f"[{v_label}][{next_v}]xfade=transition={trans_type}"
+            f":duration={trans_dur:.3f}:offset={current_offset:.3f}[{out_v}]"
+        )
+        v_label = out_v
+
+    filter_complex = ";".join(video_filters)
+
+    # xfade 只处理视频，音频由后续 BGM 步骤统一处理
+    # 这样更可靠：避免无音频片段导致 acrossfade 失败
+    cmd = [
+        ffmpeg, "-y",
+        *inputs,
+        "-filter_complex", filter_complex,
+        "-map", "[vout]",
+        "-an",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
+        str(output_video),
+    ]
+
+    print(f"\n== Concatenating {n} clips with xfade transitions ==")
+    run_cmd(cmd, dry_run=dry_run)
+
+
 def concat_videos(
     ffmpeg: str,
     input_videos: List[Path],
@@ -893,14 +982,47 @@ def main() -> int:
         processed_files.append(subtitle_path)
 
     final_output = temp_dir / "merged_no_bgm.mp4"
-    print(f"\n== Concatenating {len(processed_files)} clips ==")
-    concat_videos(
-        ffmpeg=args.ffmpeg,
-        input_videos=processed_files,
-        output_video=final_output,
-        temp_dir=temp_dir,
-        dry_run=args.dry_run,
-    )
+
+    # 检查是否有转场效果
+    has_transitions = any(clip.transition for clip in clips)
+
+    if has_transitions and len(processed_files) >= 2:
+        try:
+            concat_videos_with_xfade(
+                ffmpeg=args.ffmpeg,
+                input_videos=processed_files,
+                clips=clips,
+                output_video=final_output,
+                dry_run=args.dry_run,
+            )
+        except (RuntimeError, Exception) as e:
+            print(f"\nWarning: xfade failed ({e}), falling back to hard-cut concat.")
+            concat_videos(
+                ffmpeg=args.ffmpeg,
+                input_videos=processed_files,
+                output_video=final_output,
+                temp_dir=temp_dir,
+                dry_run=args.dry_run,
+            )
+    else:
+        print(f"\n== Concatenating {len(processed_files)} clips ==")
+        concat_videos(
+            ffmpeg=args.ffmpeg,
+            input_videos=processed_files,
+            output_video=final_output,
+            temp_dir=temp_dir,
+            dry_run=args.dry_run,
+        )
+
+    # 计算预期总时长（考虑转场重叠）
+    total_clip_duration = sum(clip.duration for clip in clips)
+    if has_transitions:
+        overlap = sum(
+            clip.transition_duration for clip in clips[:-1] if clip.transition
+        )
+        expected_dur = total_clip_duration - overlap
+    else:
+        expected_dur = total_clip_duration
 
     ffprobe = resolve_ffprobe(args.ffmpeg)
     bgm_output: Optional[Path] = None
@@ -924,7 +1046,7 @@ def main() -> int:
             output_video=bgm_output,
             bgm_file=bgm_file,
             dry_run=args.dry_run,
-            expected_duration=sum(clip.duration for clip in clips),
+            expected_duration=expected_dur,
         )
     else:
         bgm_output = output_dir / build_final_output_name(meta, clips)
