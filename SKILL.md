@@ -164,7 +164,7 @@ python "<SKILL_DIR>\scripts\analyze_video.py" --video-dir "<VIDEO_DIR>" --output
 | `--model-dir` | `<SKILL_DIR>/models/Qwen2.5-VL-7B-Instruct-int4` | 模型目录 |
 | `--device` | `GPU` | `GPU` 或 `CPU`（GPU 失败时可回退 CPU） |
 | `--seg-duration` | `3.0` | 段时长（秒） |
-| `--frames-per-seg` | `4` | 每段提取帧数 |
+| `--frames-per-seg` | `8` | 每段提取帧数（视频模式） |
 
 **默认提示词：**
 ```
