@@ -437,8 +437,12 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 8. ☐ 最后一个片段不含 transition
 9. ☐ 实际输出时长偏差 ≤ target × 20%（实际时长 = sum(durations) - 转场重叠总量）
 
-**实际输出时长计算**：`sum(clip durations) - (转场数 × transition_duration)`
-例如：10个 3s 片段 + 9个 0.8s 转场 → 30 - 7.2 = 22.8s
+**实际输出时长计算**：`sum(clip durations) - sum(有转场的片段的 transition.duration)`
+即：逐个累加每个片段的 duration，再减去除最后一个片段外所有设置了 transition 的片段的 transition.duration。
+例如：10 个 3s 片段 + 9 个 0.8s 转场 → 30 - 7.2 = 22.8s
+
+> **注意**：compose_video.py 在运行时会自动将转场时长限制为相邻两个片段中较短者的一半。
+> 如果某个转场 duration 超过此限制，实际时长会比上述公式计算值略长。
 
 **时长偏差恢复**：如果实际输出时长与 target 偏差 > 20%：
 - 总时长偏长 → 移除叙事贡献最低的 1-2 个片段
