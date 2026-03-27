@@ -415,7 +415,7 @@ python "<SKILL_DIR>\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\stor
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | `--storyboard` | — | storyboard.json 路径（必需） |
-| `--font-size` | `40` | 字幕字号 |
+| `--font-size` | `60` | 字幕字号 |
 | `--max-line-len` | `16` | 每行最大字符数 |
 | `--bgm-volume` | `0.3` | BGM 音量（0.0-1.0） |
 | `--dry-run` | — | 仅打印命令不执行（调试用） |

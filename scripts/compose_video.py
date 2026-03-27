@@ -789,7 +789,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--font-size",
         type=int,
-        default=40,
+        default=60,
         help="Subtitle font size",
     )
     parser.add_argument(
