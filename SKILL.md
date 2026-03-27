@@ -145,13 +145,19 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 
 ## 阶段 2：分析
 
+### 快速模式判断
+
+检查 `<VIDEO_DIR>\output_vlm.json` 是否存在：
+- **存在** → 用户明确提供了已分析结果，**跳过阶段 2**，直接复制到 `<WORKSPACE_DIR>\output_vlm.json` 并进入阶段 3
+- **不存在** → 执行下方完整分析流程
+
+> 快速模式用于避免重复 VLM 分析（耗时较长）。用户必须自行确保该 JSON 与当前视频目录匹配。
+
 ### 步骤 2.1 确认阶段 1 已完成
 
 确认 `<WORKSPACE_DIR>` 已存在、`.venv` 已就绪、模型目录完整。若阶段 1 未执行，必须返回阶段 1。
 
 ### 步骤 2.2 运行分析
-
-**规则：始终重新运行，绝不复用已有的 output_vlm.json。**
 
 ```bash
 "<VENV_PYTHON>" "<SKILL_DIR>\scripts\analyze_video.py" --video-dir "<VIDEO_DIR>" --output "<WORKSPACE_DIR>\output_vlm.json" --model-dir "<SKILL_DIR>\models\Qwen2.5-VL-7B-Instruct-int4" --prompt "<PROMPT>"
