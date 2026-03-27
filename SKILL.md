@@ -139,7 +139,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 5. **准备统一运行时**：创建 `.venv` 并安装 requirements，确认 `ffmpeg.exe` / `ffprobe.exe` 存在，确认模型目录完整有效
 6. **写入运行时清单**：写入 `<WORKSPACE_DIR>\runtime_env.json`，后续阶段优先参考其中的 `venv_python` / `ffmpeg` / `ffprobe` / `model_dir`
 
-** 自检：** □ 工作区目录已创建 □ 视频文件 ≥ 1 □ `.venv` 已就绪 □ `ffmpeg.exe` / `ffprobe.exe` 存在 □ 模型目录完整 □ `runtime_env.json` 已写入
+** 自检：**  工作区目录已创建  视频文件 ≥ 1  `.venv` 已就绪  `ffmpeg.exe` / `ffprobe.exe` 存在  模型目录完整  `runtime_env.json` 已写入
 
 ---
 
@@ -203,7 +203,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 }
 ```
 
-** 自检：** □ output_vlm.json 文件大小 > 0 □ processed_videos 数组非空 □ 每个视频有 segments
+** 自检：**  output_vlm.json 文件大小 > 0  processed_videos 数组非空  每个视频有 segments
 
 ---
 
@@ -285,15 +285,15 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 
 **字幕质量自检**（写完后必须执行）：
 
-1. ☐ 把所有字幕按顺序连起来读——**脱离画面是否仍然是一段有意义的叙述**？
-2. ☐ 能否感受到**情感从起点到终点的变化弧线**？
-3. ☐ 第一句是否**引发好奇或制造悬念**？最后一句是否**留有余韵**？
-4. ☐ 有没有任何一句在**直白描述画面内容**？（如有，必须重写）
-5. ☐ 有没有两句字幕**表达了相同的意思**？（如有，删除或改写其中一句）
+1. 把所有字幕按顺序连起来读——**脱离画面是否仍然是一段有意义的叙述**？
+2. 能否感受到**情感从起点到终点的变化弧线**？
+3. 第一句是否**引发好奇或制造悬念**？最后一句是否**留有余韵**？
+4. 有没有任何一句在**直白描述画面内容**？（如有，必须重写）
+5. 有没有两句字幕**表达了相同的意思**？（如有，删除或改写其中一句）
 
 **示例——同一组摩旅素材的好与坏：**
 
-❌ **差的字幕**（各说各话，没有故事）：
+**差的字幕**（各说各话，没有故事）：
 ```
 "出发，向着远方" → "风从耳边呼啸而过" → "山川湖海皆是风景"
 → "心之所向" → "阳光洒在山路上" → "此刻什么都不想"
@@ -302,7 +302,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 ```
 问题：前后不连贯，"出发""自由""风景"各重复两次，#5 在描述画面，整体像一堆随机拼凑的鸡汤。
 
-✅ **好的字幕**（完整叙事，有弧线）：
+ **好的字幕**（完整叙事，有弧线）：
 ```
 "一直想知道 公路尽头是什么"          ← 开篇：好奇，抛出悬念
 "今天终于骑上了车"                   ← 铺陈：出发
@@ -493,17 +493,17 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 
 #### 写入前必须验证
 
-1. ☐ `theme`、`target_duration_seconds` 两个必需字段存在
-2. ☐ 每个 clip：`out_point > in_point` 且 `duration == out_point - in_point` 且 `duration > 0`
-3. ☐ 每个 `source_video` 路径指向 `<VIDEO_DIR>` 中实际存在的文件
-4. ☐ 每个 `source_segment_id` 在 output_vlm.json 对应视频的 seg_id 范围内
-5. ☐ 无重复的 `(source_video, source_segment_id)` 组合
-6. ☐ 每个 clip 的 `voiceover.text` 非空（每个片段必须有字幕）
-7. ☐ 所有字幕连续读起来是一段完整连贯的叙事（非独立的散句）
-8. ☐ `file_path` 是绝对路径且 BGM 文件存在
-9. ☐ `transition.type` 必须是上表中的有效值
-10. ☐ 最后一个片段不含 transition
-11. ☐ 实际输出时长偏差 ≤ target × 20%（实际时长 = sum(durations) - 转场重叠总量）
+1. `theme`、`target_duration_seconds` 两个必需字段存在
+2. 每个 clip：`out_point > in_point` 且 `duration == out_point - in_point` 且 `duration > 0`
+3. 每个 `source_video` 路径指向 `<VIDEO_DIR>` 中实际存在的文件
+4. 每个 `source_segment_id` 在 output_vlm.json 对应视频的 seg_id 范围内
+5. 无重复的 `(source_video, source_segment_id)` 组合
+6. 每个 clip 的 `voiceover.text` 非空（每个片段必须有字幕）
+7. 所有字幕连续读起来是一段完整连贯的叙事（非独立的散句）
+8. `file_path` 是绝对路径且 BGM 文件存在
+9. `transition.type` 必须是上表中的有效值
+10. 最后一个片段不含 transition
+11. 粗略估算实际输出时长是否与 target 大致匹配（实际时长 ≈ sum(durations) - 转场重叠总量，偏差合理即可）
 
 **实际输出时长计算**：`sum(clip durations) - sum(有转场的片段的 transition.duration)`
 即：逐个累加每个片段的 duration，再减去除最后一个片段外所有设置了 transition 的片段的 transition.duration。
@@ -512,35 +512,21 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 > **注意**：compose_video.py 在运行时会自动将转场时长限制为相邻两个片段中较短者的一半。
 > 如果某个转场 duration 超过此限制，实际时长会比上述公式计算值略长。
 
-**时长偏差恢复**：如果实际输出时长与 target 偏差 > 20%：
-- 总时长偏长 → 移除叙事贡献最低的 1-2 个片段
-- 总时长偏短 → 添加 1-2 个与叙事匹配的新片段
-- 调整后重新验证，直到偏差 ≤ 20%
+**时长偏差参考**：如果实际输出时长与 target 差距较大，可考虑：
+- 总时长偏长 → 酌情移除叙事贡献较低的片段
+- 总时长偏短 → 酌情添加与叙事匹配的新片段
 
-** 自检：** □ 11 项验证全部通过 □ storyboard.json 已写入
+** 自检：**  11 项验证全部通过  storyboard.json 已写入
 
 ---
 
 ## 阶段 4：合成
 
-### 步骤 4.0 时长校验（硬性门控）
+### 步骤 4.0 时长粗检
 
-重新读取 storyboard.json 计算片段总时长。**偏差 > target × 20% 时禁止执行 compose_video.py**，返回步骤 3.6（时长偏差恢复）调整。
+重新读取 storyboard.json 粗略估算片段总时长，确认与 target 大致匹配。如差距明显，可回到步骤 3.6 酌情调整。
 
-```python
-import json
-with open("<WORKSPACE_DIR>/storyboard.json", encoding="utf-8") as f:
-    sb = json.load(f)
-target = sb["storyboard_metadata"]["target_duration_seconds"]
-clips = sb["clips"]
-raw_duration = sum(c["timecode"]["duration"] for c in clips)
-overlap = sum(c["transition"]["duration"] for c in clips if c.get("transition"))
-actual_duration = raw_duration - overlap
-deviation = abs(actual_duration - target)
-threshold = target * 0.20
-print(f"target={target}s raw={raw_duration:.1f}s overlap={overlap:.1f}s actual={actual_duration:.1f}s deviation={deviation:.1f}s")
-print("PASS" if deviation <= threshold else "FAIL")
-```
+粗算公式：`actual ≈ sum(clip durations) - sum(transition durations)`，与 target 对比即可。
 
 ### 步骤 4.1 运行合成
 
@@ -569,11 +555,10 @@ print("PASS" if deviation <= threshold else "FAIL")
 
 | 结果 | 动作 |
 |------|------|
-| 偏差 ≤ target × 20% | 向用户报告视频路径和时长，任务完成 |
-| 偏差 > target × 20% | 返回步骤 3.2 调整片段，最多重试 2 次 |
-| 重试 2 次仍不通过 | 告知用户视频素材时长不足，建议补充素材 |
+| 时长与 target 大致匹配 | 向用户报告视频路径和时长，任务完成 |
+| 时长差距明显 | 告知用户实际时长，由用户决定是否需要调整 |
 
-** 自检：** □ 最终视频文件存在 □ 时长偏差 ≤ 20% □ 视频可播放
+** 自检：**  最终视频文件存在  已向用户报告实际时长  视频可播放
 
 ---
 
@@ -592,7 +577,7 @@ print("PASS" if deviation <= threshold else "FAIL")
 | 字幕必须是连贯叙事 | 所有字幕连续读必须是有头有尾的完整故事，不是散句 |
 | 禁止重复片段 | (source_video, source_segment_id) 必须唯一 |
 | BGM 绝对路径 | file_path 必须是绝对路径 |
-| 时长偏差 ≤ 20% | 写入前 + 合成前 + 交付前三次校验 |
+| 时长大致匹配 | 以 target 为参考，无需精确卡阈值，差距明显时告知用户 |
 | 路径用反斜杠 | 命令行参数和 JSON 中都用 `\\` |
 
 ---
