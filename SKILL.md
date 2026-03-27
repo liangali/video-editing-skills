@@ -270,7 +270,7 @@ python "<SKILL_DIR>\scripts\analyze_video.py" --video-dir "<VIDEO_DIR>" --output
 
 **核心原则：补充情感，不要描述画面。**
 
-- 每 3 秒片段最多 10-15 个字，不能为空字幕
+- 每 3 秒片段最多 10-15 个字，**不能为空字幕**
 - 字幕应表达画面无法传达的情绪和内心独白
 - 匹配 vlog 氛围（积极向上、深思感悟等）
 
@@ -366,7 +366,7 @@ python "<SKILL_DIR>\scripts\analyze_video.py" --video-dir "<VIDEO_DIR>" --output
 - `in_point`：该 seg_id 的 `seg_start` 值
 - `out_point`：该 seg_id 的 `seg_end` 值
 - `duration`：必须等于 `out_point - in_point`，且 > 0
-- `voiceover.text`：字幕文本，不能为空字幕
+- `voiceover.text`：字幕文本，**不能为空字幕**
 - `file_path`：BGM 的**绝对路径**
 
 #### 写入前必须验证
@@ -425,6 +425,18 @@ python "<SKILL_DIR>\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\stor
 
 **合成失败时**：先加 `--dry-run` 检查生成的 ffmpeg 命令，确认路径和参数正确。
 
+**临时片段时长自动校验（compose_video.py 内置）：**
+
+compose_video.py 在提取每个临时片段后，自动将实际时长与 storyboard 中指定的 `duration` 对比：
+
+| 检测结果 | 原因 | 处理方式 |
+|----------|------|----------|
+| 实际时长 = 期望时长  | 正常 | 直接使用，继续下一片段 |
+| 实际时长 > 期望时长  | `-c copy` + 输入侧 seek 遇到关键帧对齐问题，导致时长偏长（如期望 3s 实际出 6s） | 自动切换至**输出侧 seek 模式**（`-ss` 在 `-i` 之后）重新提取 |
+| 输入侧 seek 本身失败 | ffmpeg 命令错误或路径问题 | 同上，自动切换输出侧 seek 重试 |
+
+> **说明：** 输入侧 seek（`-ss` 在 `-i` 前）速度快，但 `-c copy` 时只能从关键帧开始，可能导致实际时长大于期望值。输出侧 seek（`-ss` 在 `-i` 后）帧精确，但速度较慢，且极少情况下会产生 `Duration:N/A` 的片段。两次均失败时抛出异常，合成终止。
+
 ### 步骤 4.2 最终时长校验
 
 用 ffprobe 测量实际视频时长：
@@ -468,6 +480,7 @@ python "<SKILL_DIR>\scripts\compose_video.py" --storyboard "<WORKSPACE_DIR>\stor
 | output_vlm.json 为空 | 检查控制台错误；若反复失败可尝试 `--device CPU` |
 | 可用段数 < 目标片段数 | 降低 `target_duration_seconds` 或告知用户补充素材 |
 | compose_video.py 失败 | 添加 `--dry-run` 检查命令；检查 source_video 路径是否正确 |
+| 临时片段时长偏长（如期望 3s 实际 6s） | 由 `-c copy` + 输入侧 seek 关键帧对齐导致，compose_video.py 会自动切换输出侧 seek 重试，无需手动干预 |
 | BGM 路径无效 | 确认使用绝对路径拼接 `<SKILL_DIR>\resource\bgm\` + 文件名 |
 
 ### LLM 常见错误预防

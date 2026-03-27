@@ -276,6 +276,26 @@ def _is_valid_clip(ffmpeg: str, output_path: Path) -> bool:
     return bool(value) and value.lower() not in ("n/a", "")
 
 
+def _get_clip_actual_duration(ffmpeg: str, output_path: Path) -> Optional[float]:
+    """使用 ffprobe 获取已生成片段的实际时长（秒），无法获取时返回 None。"""
+    if not output_path.exists() or output_path.stat().st_size == 0:
+        return None
+    ffprobe = Path(ffmpeg).with_name("ffprobe.exe")
+    probe_bin = str(ffprobe) if ffprobe.exists() else "ffprobe"
+    result = subprocess.run(
+        [probe_bin, "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(output_path)],
+        capture_output=True, text=True,
+    )
+    value = result.stdout.strip()
+    if value and value.lower() not in ("n/a", ""):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
 def extract_clip(
     ffmpeg: str,
     source_video: Path,
@@ -312,9 +332,16 @@ def extract_clip(
     print(" ".join(cmd_input_seek))
     result = subprocess.run(cmd_input_seek, capture_output=True, text=True)
     if result.returncode == 0 and _is_valid_clip(ffmpeg, output_path):
-        return
+        actual_dur = _get_clip_actual_duration(ffmpeg, output_path)
+        if actual_dur is None or actual_dur <= duration * 1.3:
+            return
+        print(
+            f"[extract_clip] 时长偏差过大（期望 {duration:.2f}s，实际 {actual_dur:.2f}s），"
+            f"可能为关键帧对齐问题，切换到输出侧 seek 模式重试..."
+        )
+    else:
+        print("[extract_clip] 输入侧 seek 失败或输出无效，切换到输出侧 seek 模式重试...")
 
-    print(f"[extract_clip] 输入侧 seek 失败或输出无效，切换到输出侧 seek 模式重试...")
     print(" ".join(cmd_output_seek))
     result2 = subprocess.run(cmd_output_seek, capture_output=True, text=True)
     if result2.returncode != 0 or not _is_valid_clip(ffmpeg, output_path):
