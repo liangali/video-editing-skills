@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -9,6 +11,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
+
+from skill_runtime import ensure_skill_requirements, maybe_reexec_in_skill_venv
 
 
 VALID_XFADE_TRANSITIONS = {
@@ -28,7 +32,7 @@ class ClipSpec:
     duration: float
     subtitle: str
     transition: str = ""
-    transition_duration: float = 0.5
+    transition_duration: float = 0.8
 
 
 @dataclass
@@ -167,7 +171,7 @@ def load_storyboard(
 
         trans_obj = clip.get("transition") or {}
         trans_type = str(trans_obj.get("type", "")).strip().lower()
-        trans_dur = float(trans_obj.get("duration", 0.5))
+        trans_dur = float(trans_obj.get("duration", 0.8))
         if trans_type and trans_type not in VALID_XFADE_TRANSITIONS:
             print(f"Warning: clip {idx} transition '{trans_type}' not supported, ignoring.")
             trans_type = ""
@@ -916,6 +920,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+
+    try:
+        ensure_skill_requirements(force=False)
+        maybe_reexec_in_skill_venv(Path(__file__).resolve())
+    except Exception as exc:
+        print(f"Error: failed to prepare shared .venv: {exc}", file=sys.stderr)
+        return 1
     if not args.ffmpeg:
         args.ffmpeg = find_default_ffmpeg()
     storyboard_path = Path(args.storyboard)
