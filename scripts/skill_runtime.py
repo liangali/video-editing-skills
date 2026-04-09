@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 MIN_PYTHON = (3, 10)
-DEFAULT_MODEL_NAME = "Qwen2.5-VL-7B-Instruct-int4"
+DEFAULT_MODEL_NAME = "Qwen3-VL-8B-Instruct-int4-ov"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent

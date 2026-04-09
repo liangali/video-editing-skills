@@ -10,7 +10,7 @@ analyze_video.py - 阶段 2：纯 Python 视频分析，替代 FLAMA。
     --video-dir   视频文件所在目录（必需）
     --output      输出 JSON 文件路径（必需）
     --prompt      VLM 分析提示词（可选，有默认值）
-    --model-dir   OpenVINO 模型目录（可选，默认 SKILL_DIR/models/Qwen2.5-VL-7B-Instruct-int4）
+    --model-dir   OpenVINO 模型目录（可选，默认 DEFAULT_MODEL_DIR）
     --device      推理设备 GPU 或 CPU（可选，默认 GPU）
     --seg-duration  段时长秒数（可选，默认 3.0）
     --frames-per-seg  每段提取帧数（可选，默认 4）
@@ -203,24 +203,27 @@ def analyze_segment_vlm(
     """
     使用 VLM 视频模式分析一组帧，返回文本描述。
 
-    使用 videos= 参数（而非 images=）传入帧序列，
-    让 Qwen2.5-VL 以视频模式处理，保留帧间时序信息。
-    模型内部会按 temporal_patch_size=2 将连续帧配对，
-    提取运动/变化等动态特征。
+    使用 videos= 参数传入帧序列（视频模式），保留帧间时序信息。
+    videos= 期望 list[ov.Tensor]，每个 Tensor 代表一个完整视频，
+    形状为 (N, H, W, C)——所有帧堆叠成一个 4D Tensor。
+    不能传入多个独立 3D Tensor，否则每帧会被当成独立视频导致推理失败。
     """
     import openvino as ov
 
-    frame_tensors = []
+    frames_np = []
     for img in frames:
         rgb = img.convert("RGB")
         arr = np.array(rgb, dtype=np.uint8)
-        frame_tensors.append(ov.Tensor(arr))
+        frames_np.append(arr)
+
+    # 堆叠为 (N, H, W, C) 的单个视频 Tensor，与官方 video_to_text_chat.py 保持一致
+    video_tensor = ov.Tensor(frames_np)
 
     generation_config = {"repetition_penalty": 1.2}
 
     response = pipeline.generate(
         prompt,
-        videos=frame_tensors if frame_tensors else None,
+        videos=[video_tensor],
         max_new_tokens=max_new_tokens,
         **generation_config,
     )
