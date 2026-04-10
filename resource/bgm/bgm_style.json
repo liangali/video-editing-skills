@@ -1,148 +1,302 @@
 {
-  "舒缓优美": {
-    "003_cozy_piano_morning.mp3": {
-      "file_path": "003_cozy_piano_morning.mp3",
+  "清新明快": {
+    "01_轻松早晨咖啡馆/b5bc0621-ae7a-7385-d7be-dac8056985ec.mp3": {
+      "file_path": "01_轻松早晨咖啡馆/b5bc0621-ae7a-7385-d7be-dac8056985ec.mp3",
       "analysis": {
-        "rhythm": "中低速，节拍柔和稳定。",
+        "rhythm": "中速，节奏轻快活泼，爵士鼓刷轻盈稳定。",
+        "emotion": "明朗、惬意、轻松、愉快。",
+        "timbre": "清新、温暖、明亮、亲和。",
+        "instruments": "原声吉他、钢琴、爵士鼓刷、轻贝斯。",
+        "scenarios": "早晨咖啡、法式早餐、慵懒早晨、咖啡馆日常。",
+        "style": "轻松早晨咖啡馆",
+        "style_tag": "清新明快",
+        "summary": "法式小品风格的清晨咖啡馆配乐，吉他与钢琴相互呼应，营造轻盈愉快的早晨氛围，适合日常早晨 routine 类 vlog。",
+        "caption": "轻快的原声吉他，温暖的钢琴，轻柔的爵士鼓刷，慵懒惬意，明媚清新，适合早晨咖啡时光，法式小品风格",
+        "bpm": 92,
+        "key_scale": "G Major",
+        "duration": 60
+      },
+      "source_file_path": "01_轻松早晨咖啡馆/b5bc0621-ae7a-7385-d7be-dac8056985ec.mp3"
+    }
+  },
+  "都市活力": {
+    "02_城市街头漫步/0cbbf20a-74c2-50bd-c3a9-5e96effc2329.mp3": {
+      "file_path": "02_城市街头漫步/0cbbf20a-74c2-50bd-c3a9-5e96effc2329.mp3",
+      "analysis": {
+        "rhythm": "中高速，节拍清晰有力，律动感强。",
+        "emotion": "活力、轻快、积极、都市感。",
+        "timbre": "明亮、现代、干净、有弹性。",
+        "instruments": "电子鼓、拨弦贝斯、合成器、电钢琴。",
+        "scenarios": "城市街拍、日常出行、购物逛街、街头漫步。",
+        "style": "城市街头漫步",
+        "style_tag": "都市活力",
+        "summary": "充满都市活力的现代电子配乐，节拍清晰律动强，适合城市街景切换或日常出行记录类 vlog。",
+        "caption": "轻盈的电子节拍，拨弦贝斯，明亮的合成器，充满活力，现代都市感，轻松愉快，适合城市街景或日常生活记录",
+        "bpm": 110,
+        "key_scale": "C Major",
+        "duration": 60
+      },
+      "source_file_path": "02_城市街头漫步/0cbbf20a-74c2-50bd-c3a9-5e96effc2329.mp3"
+    }
+  },
+  "史诗壮阔": {
+    "03_旅行山野大景/b3007ae7-d516-a934-5457-08ffef14041c.mp3": {
+      "file_path": "03_旅行山野大景/b3007ae7-d516-a934-5457-08ffef14041c.mp3",
+      "analysis": {
+        "rhythm": "中低速，节奏宽广舒展，层层递进。",
+        "emotion": "壮阔、激励、自由、震撼。",
+        "timbre": "宏大、饱满、空灵、有层次。",
+        "instruments": "弦乐组、钢琴、氛围音效垫、定音鼓。",
+        "scenarios": "旅行风景大片、山野徒步、延时摄影、自然纪录。",
+        "style": "旅行山野大景",
+        "style_tag": "史诗壮阔",
+        "summary": "史诗级弦乐旅行配乐，层次丰富气势磅礴，适合山川大景或自然延时摄影类 vlog 开场与高潮段落。",
+        "caption": "宏大的弦乐，史诗钢琴，空灵氛围音效，层次丰富，激励人心，适合旅行风景大片或山野自然延时摄影",
+        "bpm": 76,
+        "key_scale": "D Major",
+        "duration": 60
+      },
+      "source_file_path": "03_旅行山野大景/b3007ae7-d516-a934-5457-08ffef14041c.mp3"
+    }
+  },
+  "慵懒治愈": {
+    "04_Lo-Fi 学习专注/e0668008-8914-5b7a-5978-a3fa59bd5e29.mp3": {
+      "file_path": "04_Lo-Fi 学习专注/e0668008-8914-5b7a-5978-a3fa59bd5e29.mp3",
+      "analysis": {
+        "rhythm": "中低速，鼓点慵懒随性，节拍松弛自然。",
+        "emotion": "宁静、专注、怀旧、放松。",
+        "timbre": "温暖、颗粒感、朦胧、复古。",
+        "instruments": "Rhodes 电钢琴、黑胶唱片噪声、boom-bap 鼓、低沉贝斯。",
+        "scenarios": "学习专注、读书写作、咖啡馆独处、安静午后。",
+        "style": "Lo-Fi 学习专注",
+        "style_tag": "慵懒治愈",
+        "summary": "经典 lo-fi 嘻哈氛围配乐，黑胶质感搭配慵懒鼓点，营造专注而放松的环境，适合学习或安静日常记录类 vlog。",
+        "caption": "lo-fi 嘻哈，黑胶唱片噪声，温暖的 Rhodes 电钢琴，慵懒的 boom-bap 鼓，低沉贝斯，怀旧宁静，适合学习读书或安静日常",
+        "bpm": 82,
+        "key_scale": "F Minor",
+        "duration": 60
+      },
+      "source_file_path": "04_Lo-Fi 学习专注/e0668008-8914-5b7a-5978-a3fa59bd5e29.mp3"
+    }
+  },
+  "赛博迷幻": {
+    "05_夜晚霓虹都市/a00f12e2-1f5d-4d51-57b6-bad82d439cf8.mp3": {
+      "file_path": "05_夜晚霓虹都市/a00f12e2-1f5d-4d51-57b6-bad82d439cf8.mp3",
+      "analysis": {
+        "rhythm": "中高速，电子鼓机节拍精准冰冷，律动感强。",
+        "emotion": "神秘、迷幻、酷感、孤独、都市夜晚。",
+        "timbre": "复古、霓虹感、冷峻、电子化。",
+        "instruments": "复古合成器、电子鼓机、失真吉他、贝斯合成器。",
+        "scenarios": "城市夜景、霓虹街拍、深夜出行、赛博朋克风格。",
+        "style": "夜晚霓虹都市",
+        "style_tag": "赛博迷幻",
+        "summary": "80年代 synthwave 复古赛博配乐，霓虹感合成器与冷峻鼓机构建迷幻夜都市氛围，适合城市夜景或赛博风格 vlog。",
+        "caption": "复古合成器，80年代 synthwave 风格，电子鼓机，霓虹感失真吉他，神秘迷幻，赛博朋克氛围，适合夜景或城市夜晚延时",
+        "bpm": 118,
+        "key_scale": "A Minor",
+        "duration": 60
+      },
+      "source_file_path": "05_夜晚霓虹都市/a00f12e2-1f5d-4d51-57b6-bad82d439cf8.mp3"
+    }
+  },
+  "温暖治愈": {
+    "06_温馨家居日常/d715befb-8617-9a57-149b-5bbf6e0ab6b4.mp3": {
+      "file_path": "06_温馨家居日常/d715befb-8617-9a57-149b-5bbf6e0ab6b4.mp3",
+      "analysis": {
+        "rhythm": "中低速，节拍柔和稳定，轻盈不压迫。",
         "emotion": "温馨、舒适、放松、治愈。",
-        "timbre": "温暖、清净、亲和。",
-        "instruments": "钢琴、低音贝斯、刷弦打击乐、轻弦乐。",
-        "scenarios": "早晨日常、居家 vlog、早餐/起床场景。",
-        "style": "warm piano lifestyle music",
-        "style_tag": "舒缓优美",
-        "summary": "温暖亲和的晨间钢琴配乐，以钢琴主旋律带动情绪，适合居家、早餐和早晨 routine。"
+        "timbre": "温暖、清净、亲和、柔软。",
+        "instruments": "指弹吉他、钢琴、轻打击乐、低音贝斯。",
+        "scenarios": "居家日常、烹饪美食、收纳整理、早餐/起床场景。",
+        "style": "温馨家居日常",
+        "style_tag": "温暖治愈",
+        "summary": "温暖治愈的家居日常配乐，指弹吉他与钢琴营造舒适轻松氛围，适合居家生活、烹饪或日常 routine 类 vlog。",
+        "caption": "轻柔的指弹吉他，简单的钢琴旋律，轻盈的打击乐，温暖亲切，治愈系，适合居家日常 vlog 或烹饪美食记录",
+        "bpm": 80,
+        "key_scale": "C Major",
+        "duration": 60
       },
-      "source_file_path": "003_cozy_piano_morning.mp3"
+      "source_file_path": "06_温馨家居日常/d715befb-8617-9a57-149b-5bbf6e0ab6b4.mp3"
     }
   },
-  "温馨浪漫": {
-    "012_warm_family_piano.mp3": {
-      "file_path": "012_warm_family_piano.mp3",
+  "阳光热带": {
+    "07_海边夏日度假/9d6da8e6-573c-1972-e833-bc42f7f5b5be.mp3": {
+      "file_path": "07_海边夏日度假/9d6da8e6-573c-1972-e833-bc42f7f5b5be.mp3",
       "analysis": {
-        "rhythm": "中速，轻柔流行节拍。",
-        "emotion": "温暖、真挚、振奋、感动。",
-        "timbre": "干净、温暖、情感丰富。",
-        "instruments": "钢琴、低音贝斯、轻鼓、轻弦乐。",
-        "scenarios": "家庭 vlog、亲子场景、庆典高光时刻。",
-        "style": "warm piano pop, family vlog underscore",
-        "style_tag": "温馨浪漫",
-        "summary": "更偏家庭与亲子内容的钢琴配乐，旋律温暖、易记，适合团聚和生活高光时刻。"
+        "rhythm": "中速，节奏轻盈跳跃，带有热带慵懒律动。",
+        "emotion": "阳光、欢快、慵懒、自由、度假感。",
+        "timbre": "清澈、明亮、轻盈、有空气感。",
+        "instruments": "ukulele、木吉他、轻打击乐、海浪声、木鱼。",
+        "scenarios": "海边沙滩、夏日旅行、游泳冲浪、热带度假。",
+        "style": "海边夏日度假",
+        "style_tag": "阳光热带",
+        "summary": "充满热带阳光气息的夏日配乐，ukulele 与木吉他带来轻盈欢快感，适合海边度假或夏日旅行类 vlog。",
+        "caption": "热带 ukulele，欢快木吉他，轻打击乐，拍浪声，阳光感十足，慵懒热带风情，适合海边沙滩或夏日旅行 vlog",
+        "bpm": 100,
+        "key_scale": "G Major",
+        "duration": 60
       },
-      "source_file_path": "012_warm_family_piano.mp3"
-    },
-    "014_golden_hour_piano.mp3": {
-      "file_path": "014_golden_hour_piano.mp3",
-      "analysis": {
-        "rhythm": "中低速，流畅脉冲。",
-        "emotion": "浪漫、温柔、金色氛围、感性。",
-        "timbre": "金色、顺滑、光泽感。",
-        "instruments": "钢琴、低音贝斯、轻鼓、轻弦乐。",
-        "scenarios": "情侣 vlog、傍晚散步、黄昏/柔美时尚镜头。",
-        "style": "soft romantic piano pop",
-        "style_tag": "温馨浪漫",
-        "summary": "柔和浪漫的金色黄昏钢琴配乐，适合情侣、傍晚散步和温柔审美类镜头。"
-      },
-      "source_file_path": "014_golden_hour_piano.mp3"
+      "source_file_path": "07_海边夏日度假/9d6da8e6-573c-1972-e833-bc42f7f5b5be.mp3"
     }
   },
-  "轻松愉悦": {
-    "002_sunny_piano_walk.mp3": {
-      "file_path": "002_sunny_piano_walk.mp3",
+  "空灵舒缓": {
+    "08_沉浸式冥想放松/035c92d6-bfe7-3183-ea8e-087a40c9bb61.mp3": {
+      "file_path": "08_沉浸式冥想放松/035c92d6-bfe7-3183-ea8e-087a40c9bb61.mp3",
       "analysis": {
-        "rhythm": "中速，轻快向前律动。",
-        "emotion": "清新、活泼、无忧无虑。",
-        "timbre": "干净、清脆、开阔。",
-        "instruments": "钢琴、轻贝斯、轻鼓、微弱吉他。",
-        "scenarios": "街头 vlog、逛街购物、边走边说类镜头。",
-        "style": "light piano pop, urban vlog music",
-        "style_tag": "轻松愉悦",
-        "summary": "阳光感更强的钢琴配乐，旋律轻快、结构简单，适合街拍、逛街和轻松出行内容。"
+        "rhythm": "极慢速，无明显节拍，音符缓缓流动。",
+        "emotion": "平静、放松、空灵、沉浸、治愈。",
+        "timbre": "空灵、柔和、飘渺、纯净。",
+        "instruments": "钢琴、氛围垫音、弦乐、轻音效。",
+        "scenarios": "冥想瑜伽、spa 护肤、睡前放松、正念练习。",
+        "style": "沉浸式冥想放松",
+        "style_tag": "空灵舒缓",
+        "summary": "深度放松的冥想氛围配乐，空灵钢琴与缓慢弦乐营造宁静沉浸感，适合瑜伽、spa 或睡前放松类 vlog。",
+        "caption": "空灵钢琴，环境氛围垫音，轻柔弦乐，缓慢流动，深度放松，冥想感，适合 spa 护肤或冥想瑜伽类 vlog",
+        "bpm": 60,
+        "key_scale": "E Minor",
+        "duration": 60
       },
-      "source_file_path": "002_sunny_piano_walk.mp3"
-    },
-    "005_breezy_piano_drive.mp3": {
-      "file_path": "005_breezy_piano_drive.mp3",
+      "source_file_path": "08_沉浸式冥想放松/035c92d6-bfe7-3183-ea8e-087a40c9bb61.mp3"
+    }
+  },
+  "高能激燃": {
+    "09_积极运动健身/e855a9ff-01dc-89f4-eb1e-125c1d4fd0f0.mp3": {
+      "file_path": "09_积极运动健身/e855a9ff-01dc-89f4-eb1e-125c1d4fd0f0.mp3",
       "analysis": {
-        "rhythm": "中速，流畅滚动节奏。",
-        "emotion": "自由、乐观、放松、舒展。",
-        "timbre": "清澈、通透、开阔。",
-        "instruments": "钢琴、低音贝斯、轻鼓、微弱吉他。",
-        "scenarios": "公路旅行、开车蒙太奇、旅行日记。",
-        "style": "travel piano pop, road vlog music",
-        "style_tag": "轻松愉悦",
-        "summary": "有旅行流动感的钢琴主导配乐，旋律舒服顺耳，适合开车、公路和出行类 vlog。"
+        "rhythm": "高速，鼓点强劲有力，节拍紧凑推进感强。",
+        "emotion": "激励、亢奋、力量、燃烧、专注。",
+        "timbre": "强劲、厚重、穿透力强、有冲击感。",
+        "instruments": "808 鼓、律动贝斯、激励合成器、电子鼓。",
+        "scenarios": "健身训练、跑步骑行、户外极限运动、运动集锦。",
+        "style": "积极运动健身",
+        "style_tag": "高能激燃",
+        "summary": "高能激燃的运动配乐，强劲 808 鼓与推进感合成器持续拉高能量，适合健身或户外极限运动类 vlog。",
+        "caption": "高能量电子音乐，强劲 808 鼓，律动贝斯，激励感合成器，动感十足，充满力量，适合健身运动或户外极限运动 vlog",
+        "bpm": 135,
+        "key_scale": "B Minor",
+        "duration": 60
       },
-      "source_file_path": "005_breezy_piano_drive.mp3"
-    },
-    "007_cafe_piano_sparkle.mp3": {
-      "file_path": "007_cafe_piano_sparkle.mp3",
+      "source_file_path": "09_积极运动健身/e855a9ff-01dc-89f4-eb1e-125c1d4fd0f0.mp3"
+    }
+  },
+  "忧郁诗意": {
+    "10_秋日落叶文艺感/9c860ede-7f14-016c-0593-13b0376285f2.mp3": {
+      "file_path": "10_秋日落叶文艺感/9c860ede-7f14-016c-0593-13b0376285f2.mp3",
       "analysis": {
-        "rhythm": "中速，轻摇摆脉冲。",
-        "emotion": "清新、优雅、亲切。",
-        "timbre": "干净、清新明亮、有质感。",
-        "instruments": "钢琴、低音贝斯、刷弦鼓、微弱吉他。",
-        "scenarios": "咖啡馆 vlog、美食蒙太奇、都市生活镜头。",
-        "style": "cafe piano pop, lifestyle underscore",
-        "style_tag": "轻松愉悦",
-        "summary": "清新通透的咖啡馆感钢琴配乐，旋律悦耳，适合美食、咖啡和都市生活镜头。"
+        "rhythm": "慢速，节奏从容，弦乐呼吸感强。",
+        "emotion": "淡淡伤感、诗意、沉静、内敛。",
+        "timbre": "温润、忧郁、细腻、有质感。",
+        "instruments": "大提琴、钢琴、弦乐四重奏、轻氛围音效。",
+        "scenarios": "秋冬街拍、落叶公园、文艺人文记录、读书写字。",
+        "style": "秋日落叶文艺感",
+        "style_tag": "忧郁诗意",
+        "summary": "古典与现代融合的秋日诗意配乐，大提琴主导营造淡淡忧郁氛围，适合秋冬季节或文艺气质 vlog。",
+        "caption": "忧郁的大提琴，钢琴，轻柔弦乐四重奏，古典与现代融合，淡淡的伤感与诗意，适合秋冬季节或文艺人文类 vlog",
+        "bpm": 68,
+        "key_scale": "D Minor",
+        "duration": 60
       },
-      "source_file_path": "007_cafe_piano_sparkle.mp3"
-    },
-    "010_feel_good_piano_smile.mp3": {
-      "file_path": "010_feel_good_piano_smile.mp3",
+      "source_file_path": "10_秋日落叶文艺感/9c860ede-7f14-016c-0593-13b0376285f2.mp3"
+    }
+  },
+  "欢腾热闹": {
+    "11_新年节日喜庆/8fb013e1-a50b-7182-9e27-4893c894e09f.mp3": {
+      "file_path": "11_新年节日喜庆/8fb013e1-a50b-7182-9e27-4893c894e09f.mp3",
       "analysis": {
-        "rhythm": "中速，稳定上扬脉冲。",
-        "emotion": "积极、温暖、干净、治愈。",
-        "timbre": "清澈、精致、友好。",
-        "instruments": "钢琴、低音贝斯、轻鼓、微弱吉他。",
-        "scenarios": "自律生活、效率早晨、日常 recap 类 vlog。",
-        "style": "feel-good piano pop, lifestyle underscore",
-        "style_tag": "轻松愉悦",
-        "summary": "明朗治愈的钢琴旋律配乐，适合自律生活、效率内容和轻松积极的日常总结。"
+        "rhythm": "中高速，圆舞曲节拍轻盈欢腾，节奏感强。",
+        "emotion": "喜悦、热闹、欢腾、温馨、节日感。",
+        "timbre": "明亮、饱满、金属感铃声、节日色彩。",
+        "instruments": "铜管乐、弦乐、铃声、打击乐、钢琴。",
+        "scenarios": "新年跨年、节日庆典、倒计时、聚会年会。",
+        "style": "新年节日喜庆",
+        "style_tag": "欢腾热闹",
+        "summary": "欢腾喜庆的节日庆典配乐，铜管与弦乐交织铃声点缀，营造盛大节日氛围，适合新年跨年或庆典类 vlog。",
+        "caption": "欢快喜庆的节日管弦乐，铃声，欢腾的铜管乐，圆舞曲节奏，节日烟火氛围，温馨热闹，适合新年跨年或节日庆典 vlog",
+        "bpm": 120,
+        "key_scale": "C Major",
+        "duration": 60
       },
-      "source_file_path": "010_feel_good_piano_smile.mp3"
-    },
-    "013_clean_lifestyle_piano.mp3": {
-      "file_path": "013_clean_lifestyle_piano.mp3",
+      "source_file_path": "11_新年节日喜庆/8fb013e1-a50b-7182-9e27-4893c894e09f.mp3"
+    }
+  },
+  "温馨雪夜": {
+    "12_圣诞温暖平安夜/06494377-a99f-ece7-b682-4fa79b9c497e.mp3": {
+      "file_path": "12_圣诞温暖平安夜/06494377-a99f-ece7-b682-4fa79b9c497e.mp3",
       "analysis": {
-        "rhythm": "中速，紧凑而轻盈。",
-        "emotion": "自信、清爽、乐观。",
-        "timbre": "清脆、现代、精致。",
-        "instruments": "钢琴、低音贝斯、轻鼓、微弱拨奏。",
-        "scenarios": "工作场景、效率内容、品牌化日常 vlog。",
-        "style": "modern piano pop, clean vlog music",
-        "style_tag": "轻松愉悦",
-        "summary": "清爽利落的现代钢琴配乐，适合工作、效率、品牌化一点的日常生活内容。"
+        "rhythm": "慢中速，节拍轻柔稳定，如雪花飘落般从容。",
+        "emotion": "温暖、宁静、祥和、治愈、节日感。",
+        "timbre": "柔软、温润、圆润、带节日色彩。",
+        "instruments": "钢琴、木管乐、铃铛、弦乐、轻打击乐。",
+        "scenarios": "圣诞节、平安夜、冬日居家、节日布置。",
+        "style": "圣诞温暖平安夜",
+        "style_tag": "温馨雪夜",
+        "summary": "温馨治愈的圣诞平安夜配乐，钢琴与铃铛弦乐营造宁静雪夜氛围，适合圣诞或冬日节日氛围类 vlog。",
+        "caption": "温暖的钢琴旋律，木管乐，轻柔铃铛，圣诞弦乐，宁静祥和，雪夜感，治愈温馨，适合圣诞节或冬日节日氛围 vlog",
+        "bpm": 72,
+        "key_scale": "G Major",
+        "duration": 60
       },
-      "source_file_path": "013_clean_lifestyle_piano.mp3"
-    },
-    "018_pet_play_piano.mp3": {
-      "file_path": "018_pet_play_piano.mp3",
+      "source_file_path": "12_圣诞温暖平安夜/06494377-a99f-ece7-b682-4fa79b9c497e.mp3"
+    }
+  },
+  "红火喜庆": {
+    "13_中国传统节庆/af76c7f7-470f-1ab5-70e3-75a3f1cb79e4.mp3": {
+      "file_path": "13_中国传统节庆/af76c7f7-470f-1ab5-70e3-75a3f1cb79e4.mp3",
       "analysis": {
-        "rhythm": "中速，弹跳灵动节奏。",
-        "emotion": "可爱、活泼、俏皮。",
-        "timbre": "明亮、可爱、生动。",
-        "instruments": "钢琴、低音贝斯、轻打击乐、微弱铃声。",
-        "scenarios": "宠物 vlog、搞笑日常短片、俏皮剪辑。",
-        "style": "cute piano pop, playful vlog music",
-        "style_tag": "轻松愉悦",
-        "summary": "可爱跳跃的钢琴配乐，主旋律灵动、配器简单，适合宠物和搞笑生活片段。"
+        "rhythm": "中高速，锣鼓节拍强劲欢腾，具有民俗律动感。",
+        "emotion": "喜庆、红火、热闹、欢腾、民俗感。",
+        "timbre": "穿透力强、民族色彩浓郁、热烈鲜明。",
+        "instruments": "唢呐、锣鼓、古筝、二胡、扬琴。",
+        "scenarios": "春节、元宵节、庙会、民俗文化、传统节日。",
+        "style": "中国传统节庆",
+        "style_tag": "红火喜庆",
+        "summary": "浓郁中国传统节日民乐配乐，唢呐锣鼓古筝交织，热闹红火氛围扑面而来，适合春节或民俗文化类 vlog。",
+        "caption": "欢腾的中国民乐，喜庆唢呐，锣鼓，古筝，二胡，热闹红火，浓郁中国传统节日气氛，适合春节元宵或民俗文化 vlog",
+        "bpm": 126,
+        "key_scale": "D Major",
+        "duration": 60
       },
-      "source_file_path": "018_pet_play_piano.mp3"
-    },
-    "022_holiday_piano_breeze.mp3": {
-      "file_path": "022_holiday_piano_breeze.mp3",
+      "source_file_path": "13_中国传统节庆/af76c7f7-470f-1ab5-70e3-75a3f1cb79e4.mp3"
+    }
+  },
+  "慵懒爵士": {
+    "14_美食探店烟火气/3d41fe52-f606-1b0c-bdef-10320544b6b4.mp3": {
+      "file_path": "14_美食探店烟火气/3d41fe52-f606-1b0c-bdef-10320544b6b4.mp3",
       "analysis": {
-        "rhythm": "中速，轻快浮动节奏。",
-        "emotion": "阳光、轻盈、欢快。",
-        "timbre": "明亮、通透、无忧无虑。",
-        "instruments": "钢琴、低音贝斯、轻鼓、微弱吉他。",
-        "scenarios": "海滩 vlog、假日蒙太奇、夏日出行剪辑。",
-        "style": "holiday piano pop, travel lifestyle music",
-        "style_tag": "轻松愉悦",
-        "summary": "假日感很强的明亮钢琴配乐，旋律轻松顺口，适合海边、夏天和度假剪辑。"
+        "rhythm": "中速，爵士摇摆节奏，慵懒随性不拘谨。",
+        "emotion": "轻松、有趣、烟火气、食欲感、愉悦。",
+        "timbre": "温暖、有颗粒感、复古、亲切。",
+        "instruments": "爵士吉他、手风琴、轻打击乐、贝斯。",
+        "scenarios": "美食探店、餐厅用餐、市集街拍、食物制作。",
+        "style": "美食探店烟火气",
+        "style_tag": "慵懒爵士",
+        "summary": "充满烟火气的法式爵士配乐，手风琴与吉他带来慵懒有趣的小酒馆氛围，适合美食探店或市集类 vlog。",
+        "caption": "轻松愉快的爵士吉他，手风琴，轻打击乐，慵懒而有趣，充满生活烟火气，法式小酒馆风格，适合美食探店或市集街拍 vlog",
+        "bpm": 96,
+        "key_scale": "F Major",
+        "duration": 60
       },
-      "source_file_path": "022_holiday_piano_breeze.mp3"
+      "source_file_path": "14_美食探店烟火气/3d41fe52-f606-1b0c-bdef-10320544b6b4.mp3"
+    }
+  },
+  "极简未来": {
+    "15_科技感产品展示/f471210e-0446-5de5-b2e6-99bde02a6f2c.mp3": {
+      "file_path": "15_科技感产品展示/f471210e-0446-5de5-b2e6-99bde02a6f2c.mp3",
+      "analysis": {
+        "rhythm": "中高速，节拍精准机械，干净利落无拖拍。",
+        "emotion": "冷静、专注、未来感、专业、高级。",
+        "timbre": "干净、冰冷、精准、有科技质感。",
+        "instruments": "电子鼓、极简合成器、未来感音效、贝斯合成器。",
+        "scenarios": "科技产品开箱、数码评测、APP/软件展示、极简设计。",
+        "style": "科技感产品展示",
+        "style_tag": "极简未来",
+        "summary": "极简未来感的科技配乐，精准电子鼓与简洁合成器构建专业冷静氛围，适合科技产品或数码类 vlog。",
+        "caption": "简洁现代的电子音乐，精准的电子鼓，极简合成器旋律，未来感音效，干净冷静，富有张力，适合科技产品开箱或数码测评 vlog",
+        "bpm": 115,
+        "key_scale": "A Minor",
+        "duration": 60
+      },
+      "source_file_path": "15_科技感产品展示/f471210e-0446-5de5-b2e6-99bde02a6f2c.mp3"
     }
   }
 }

@@ -99,9 +99,17 @@ def resolve_storyboard_bgm_path(
     script_dir = Path(__file__).resolve().parent
     bgm_dir = script_dir.parent / "resource" / "bgm"
     if bgm_dir.exists():
+        nested_candidate = bgm_dir / candidate
+        if nested_candidate.exists():
+            return nested_candidate
+
         fallback_candidate = bgm_dir / candidate.name
         if fallback_candidate.exists():
             return fallback_candidate
+
+        recursive_matches = sorted(bgm_dir.rglob(candidate.name))
+        if recursive_matches:
+            return recursive_matches[0]
     return relative_candidate
 
 
@@ -496,7 +504,7 @@ def find_bgm_file() -> Optional[Path]:
     bgm_dir = script_dir.parent / "resource" / "bgm"
     if not bgm_dir.exists():
         return None
-    candidates = list(bgm_dir.glob("*.mp3")) + list(bgm_dir.glob("*.MP3"))
+    candidates = list(bgm_dir.rglob("*.mp3")) + list(bgm_dir.rglob("*.MP3"))
     if not candidates:
         return None
     return random.choice(candidates)
