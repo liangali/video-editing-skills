@@ -12,7 +12,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from skill_runtime import ensure_skill_requirements, maybe_reexec_in_skill_venv
+from skill_runtime import (
+    DEFAULT_COMPOSE_TARGET_RESOLUTION,
+    ensure_skill_requirements,
+    get_video_dimensions,
+    infer_compose_target_resolution_from_dims,
+    maybe_reexec_in_skill_venv,
+    parse_resolution,
+    read_workspace_compose_target_resolution,
+)
 
 
 VALID_XFADE_TRANSITIONS = {
@@ -201,22 +209,6 @@ def load_storyboard(
     return sorted(specs, key=lambda c: c.sequence_order), bgm_path, meta
 
 
-def parse_resolution(res_str: str) -> Tuple[int, int]:
-    """解析 'WxH' 或 'W:H' 格式的分辨率字符串，返回 (width, height)。"""
-    for sep in ("x", "X", ":"):
-        if sep in res_str:
-            parts = res_str.split(sep, 1)
-            try:
-                w, h = int(parts[0]), int(parts[1])
-                if w > 0 and h > 0:
-                    return w, h
-            except (ValueError, IndexError):
-                pass
-    raise ValueError(
-        f"Invalid resolution format '{res_str}'. Expected 'WxH', e.g. '1920x1080'."
-    )
-
-
 def build_scale_pad_filter(width: int, height: int) -> str:
     """构建 scale+pad 归一化滤镜，保持原始宽高比，不足部分填黑边。"""
     return (
@@ -229,17 +221,47 @@ def build_scale_pad_filter(width: int, height: int) -> str:
 def wrap_text(text: str, max_len: int) -> str:
     if not text:
         return ""
-    if "\n" in text:
-        return text
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    if "\n" in normalized:
+        return normalized
+    if max_len <= 0:
+        return normalized
+
+    # 优先在空格/标点处断行，避免“单字落行”或语义被硬切断。
+    break_chars = set(" \t,.;:!?，。！？、；：）)]}>】》」』")
     lines: List[str] = []
-    current = ""
-    for ch in text:
-        current += ch
-        if len(current) >= max_len:
-            lines.append(current)
-            current = ""
-    if current:
-        lines.append(current)
+    i = 0
+    n = len(normalized)
+    while i < n:
+        remaining = n - i
+        if remaining <= max_len:
+            lines.append(normalized[i:])
+            break
+
+        window = normalized[i : i + max_len]
+        cut = -1
+        for j in range(len(window) - 1, -1, -1):
+            if window[j] in break_chars:
+                cut = j + 1
+                break
+        if cut <= 0:
+            cut = max_len
+
+        line = normalized[i : i + cut].rstrip()
+        if not line:
+            line = normalized[i : i + cut]
+        lines.append(line)
+        i += cut
+
+        # 下一行跳过前导空白，避免行首出现“空格占位”。
+        while i < n and normalized[i] in (" ", "\t"):
+            i += 1
+
+    if len(lines) >= 2 and len(lines[-1]) == 1 and len(lines[-2]) > 2:
+        # 避免最后一行只剩 1 个字，提升观感。
+        moved = lines[-2][-1]
+        lines[-2] = lines[-2][:-1]
+        lines[-1] = moved + lines[-1]
     return "\n".join(lines)
 
 
@@ -428,27 +450,6 @@ def get_media_duration(
     return parse_duration_from_ffmpeg_output(result.stderr or result.stdout)
 
 
-def get_video_dimensions(ffprobe: str, video_path: Path) -> Optional[Tuple[int, int]]:
-    """使用 ffprobe 获取视频的 (width, height)，失败时返回 None。"""
-    cmd = [
-        ffprobe, "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "stream=width,height",
-        "-of", "csv=p=0",
-        str(video_path),
-    ]
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            line = result.stdout.strip().split("\n")[0]
-            parts = line.split(",")
-            if len(parts) >= 2:
-                return int(parts[0]), int(parts[1])
-    except Exception:
-        pass
-    return None
-
-
 def compute_content_area(
     src_w: int, src_h: int,
     tgt_w: int, tgt_h: int,
@@ -611,16 +612,8 @@ def render_subtitle(
         font_value = escape_drawtext_path(str(font_file))
         filter_parts.append(f"fontfile={font_value}")
 
-    subtitle_file = output_video.with_suffix(".txt")
-    subtitle_file.write_text(subtitle_text, encoding="utf-8")
-    subtitle_path = normalize_filter_path(subtitle_file)
-
-    use_textfile = ":" not in subtitle_path.as_posix()
-    if use_textfile:
-        textfile_value = escape_drawtext_path(str(subtitle_path))
-        filter_parts.append(f"textfile={textfile_value}")
-    else:
-        filter_parts.append(f"text='{escaped_text}'")
+    # 始终走 text=，使用 \n 显式换行，避免 textfile 在不同平台/字体下出现换行乱码方框。
+    filter_parts.append(f"text='{escaped_text}'")
 
     if target_resolution and src_dims:
         tgt_w, tgt_h = target_resolution
@@ -968,7 +961,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--font-size",
         type=int,
-        default=60,
+        default=50,
         help="Subtitle font size",
     )
     parser.add_argument(
@@ -984,8 +977,9 @@ def parse_args() -> argparse.Namespace:
             "Normalize all clips to this resolution before concatenation. "
             "Preserves aspect ratio and adds black letterbox/pillarbox padding. "
             "Format: WxH (e.g. '1920x1080', '1080x1920'). "
-            "Default: auto-detect from source clips (portrait majority → 1080x1920, "
-            "landscape majority → 1920x1080)."
+            "If omitted: skill_runtime.DEFAULT_COMPOSE_TARGET_RESOLUTION if set; else "
+            "runtime_env.json compose_target_resolution next to storyboard (from prepare_workspace); "
+            "else same majority rule on storyboard source videos."
         ),
     )
     parser.add_argument(
@@ -1050,28 +1044,49 @@ def main() -> int:
             print(f"Info: Target resolution = {target_resolution[0]}x{target_resolution[1]} (explicit)")
         except ValueError as e:
             print(f"Warning: {e}. Resolution normalization disabled.")
-    else:
-        # 自动检测：按数量多的方向决定输出分辨率
-        portrait_count = sum(1 for d in source_dims.values() if d and d[1] > d[0])
-        landscape_count = sum(1 for d in source_dims.values() if d and d[0] >= d[1])
+    elif DEFAULT_COMPOSE_TARGET_RESOLUTION and str(DEFAULT_COMPOSE_TARGET_RESOLUTION).strip():
+        res_spec = str(DEFAULT_COMPOSE_TARGET_RESOLUTION).strip()
+        try:
+            target_resolution = parse_resolution(res_spec)
+            print(
+                f"Info: Target resolution = {target_resolution[0]}x{target_resolution[1]} "
+                f"(skill_runtime.DEFAULT_COMPOSE_TARGET_RESOLUTION)"
+            )
+        except ValueError as e:
+            print(
+                f"Warning: DEFAULT_COMPOSE_TARGET_RESOLUTION ({res_spec!r}) invalid: {e}. "
+                "Falling back to auto-detect from source clips."
+            )
+    if target_resolution is None and not args.target_resolution:
+        workspace_dir = storyboard_path.resolve().parent
+        manifest_res = read_workspace_compose_target_resolution(workspace_dir)
+        if manifest_res:
+            target_resolution = manifest_res
+            print(
+                f"Info: Target resolution = {target_resolution[0]}x{target_resolution[1]} "
+                f"(runtime_env.json compose_target_resolution)"
+            )
+    if target_resolution is None and not args.target_resolution:
+        # 兜底：与阶段 1 相同规则，按 storyboard 源视频多数决定（无 manifest 或旧工作区）
+        dims_list = list(source_dims.values())
+        target_resolution = infer_compose_target_resolution_from_dims(dims_list)
+        portrait_count = sum(1 for d in dims_list if d and d[1] > d[0])
+        landscape_count = sum(1 for d in dims_list if d and d[0] >= d[1])
         total_probed = portrait_count + landscape_count
         if total_probed > 0 and portrait_count > landscape_count:
-            target_resolution = (1080, 1920)
             print(
-                f"Info: Auto-detected portrait majority "
+                f"Info: Auto-detected portrait majority from storyboard sources "
                 f"({portrait_count}/{total_probed} clips). "
                 f"Target resolution: 1080x1920"
             )
+        elif total_probed > 0:
+            print(
+                f"Info: Auto-detected landscape majority from storyboard sources "
+                f"({landscape_count}/{total_probed} clips). "
+                f"Target resolution: 1920x1080"
+            )
         else:
-            target_resolution = (1920, 1080)
-            if total_probed > 0:
-                print(
-                    f"Info: Auto-detected landscape majority "
-                    f"({landscape_count}/{total_probed} clips). "
-                    f"Target resolution: 1920x1080"
-                )
-            else:
-                print("Info: Could not probe clip dimensions. Defaulting to 1920x1080.")
+            print("Info: Could not probe clip dimensions. Defaulting to 1920x1080.")
 
     font_file = None
     if args.font_file:
