@@ -15,7 +15,7 @@ analyze_video.py - 阶段 2：纯 Python 视频分析，替代 FLAMA。
     --seg-duration  段时长秒数（可选，默认 3.0）
     --frames-per-seg  每段提取帧数（可选，默认 4）
     --scale       帧缩放比例（可选，默认 0.25）
-    --max-tokens  VLM 最大生成 token 数（可选，默认 100；若指定 --theme 则实际至少 160）
+    --max-tokens  VLM 最大生成 token 数（可选，默认 160；若指定 --theme 则实际至少 200）
 
 输出：
     output_vlm.json 格式:
@@ -66,14 +66,13 @@ DEFAULT_PROMPT = (
 
 def build_theme_aware_prompt(theme: str) -> str:
     """
-    带主题的 VLM 提示：首行固定【主题判定】，便于阅读与 select_clips 解析。
+    带主题的 VLM 提示：首行固定“主题判定: ...”，便于阅读与 select_clips 解析。
     """
     t = (theme or "").strip() or "（未指定）"
     return (
         f"剪辑主题为「{t}」。请观察本段画面后严格按下列格式输出（不要输出题外说明）：\n"
         "\n"
-        "第1行（必须，三选一原文）：【主题判定】符合  或  【主题判定】不符合  或  【主题判定】部分符合\n"
-        "（「符合」= 画面明显体现该主题；「部分符合」= 仅有弱相关元素；「不符合」= 与主题无关或相悖。）\n"
+        "第1行（必须）回答结果格式：主题判定：标签；标签只能是“符合”或“部分符合”或“不符合”之一\n"
         "\n"
         f"第2行起：{DEFAULT_PROMPT}"
     )
@@ -334,8 +333,8 @@ def parse_args() -> argparse.Namespace:
                         help="每段提取帧数（默认：8，配合视频模式 temporal_patch_size=2）")
     parser.add_argument("--scale", type=float, default=0.25,
                         help="帧缩放比例（默认：0.25）")
-    parser.add_argument("--max-tokens", type=int, default=100,
-                        help="VLM 最大生成 token 数（默认：100）")
+    parser.add_argument("--max-tokens", type=int, default=160,
+                        help="VLM 最大生成 token 160；若指定 --theme 则实际至少 200")
     return parser.parse_args()
 
 
@@ -392,8 +391,7 @@ def main() -> int:
         else:
             prompt = (
                 f"剪辑主题为「{args.theme.strip()}」。\n"
-                "输出时第1行必须为下列之一（便于后续自动选片）：\n"
-                "【主题判定】符合 或 【主题判定】不符合 或 【主题判定】部分符合\n"
+                "第1行（必须）回答结果格式：主题判定：标签；标签只能是“符合”或“部分符合”或“不符合”之一\n"
                 "第2行起再按下列要求分析：\n"
                 f"{args.prompt}"
             )
@@ -401,7 +399,7 @@ def main() -> int:
 
     max_tokens = args.max_tokens
     if args.theme and args.theme.strip():
-        max_tokens = max(max_tokens, 160)
+        max_tokens = max(max_tokens, 200)
 
     print()
 

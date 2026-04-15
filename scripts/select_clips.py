@@ -5,7 +5,7 @@ select_clips.py — 主题感知片段预选器（video-editing-skills 工作流
 从 output_vlm.json 中智能筛选片段，生成供 SKILL step 3.6 使用的候选片段池。
 
 处理流程：
-  Step 1: 解析 output_vlm.json，按主题对每个视频/片段评分（优先解析 seg_desc 首行【主题判定】）
+  Step 1: 解析 output_vlm.json，按主题对每个视频/片段评分（优先解析 seg_desc 首行“主题判定”）
   Step 2: 选出全部 video_score > 0 的主题相关视频（越多越好）；
           若相关视频数不足 --min-videos（默认 6），从剩余视频中按片段数补充至 min_videos
   Step 3: 两轮选片（每个视频最多 --max-per-video 段，默认 2）
@@ -152,12 +152,16 @@ def score_text(text: str, keywords: List[str]) -> float:
 
 
 # 与 analyze_video.py 中 build_theme_aware_prompt 约定的首行格式一致
-_THEME_VERDICT_HEAD_RE = re.compile(r"【主题判定】[：:\s]*(不符合|部分符合|符合)")
+# 新格式：主题判定: <总结>（符合/部分符合/不符合）
+# 兼容旧格式：THEME_VERDICT: MATCH|PARTIAL|MISMATCH 与 legacy 中文判定头
+_THEME_VERDICT_HEAD_RE_NEW_CN = re.compile(r"主题判定\s*[:：][^\n]{0,200}?(不符合|部分符合|符合)")
+_THEME_VERDICT_HEAD_RE_OLD_EN = re.compile(r"THEME_VERDICT\s*[:：]\s*(MATCH|PARTIAL|MISMATCH)", re.IGNORECASE)
+_THEME_VERDICT_HEAD_RE_OLD_CN_BRACKET = re.compile(r"\u3010主题判定\u3011[：:\s]*(不符合|部分符合|符合)")
 
 
 def parse_leading_theme_verdict(text: str) -> Optional[str]:
     """
-    解析 seg_desc 开头的【主题判定】行（由 VLM 主题感知提示生成）。
+    解析 seg_desc 开头的主题判定行（由 VLM 主题感知提示生成）。
 
     Returns:
         "match" | "partial" | "mismatch" | None（无标记时保持纯关键词打分，兼容旧数据）
@@ -165,20 +169,39 @@ def parse_leading_theme_verdict(text: str) -> Optional[str]:
     if not text:
         return None
     head = text.lstrip()[:240]
-    m = _THEME_VERDICT_HEAD_RE.search(head)
-    if not m:
-        return None
-    label = m.group(1)
-    if label == "符合":
-        return "match"
-    if label == "不符合":
-        return "mismatch"
-    return "partial"
+    first_line = head.splitlines()[0] if head else ""
+    m_new_cn = _THEME_VERDICT_HEAD_RE_NEW_CN.search(first_line)
+    if m_new_cn:
+        label = m_new_cn.group(1)
+        if label == "符合":
+            return "match"
+        if label == "不符合":
+            return "mismatch"
+        return "partial"
+
+    m_old_en = _THEME_VERDICT_HEAD_RE_OLD_EN.search(head)
+    if m_old_en:
+        label = m_old_en.group(1).upper()
+        if label == "MATCH":
+            return "match"
+        if label == "MISMATCH":
+            return "mismatch"
+        return "partial"
+
+    m_old_cn = _THEME_VERDICT_HEAD_RE_OLD_CN_BRACKET.search(head)
+    if m_old_cn:
+        label = m_old_cn.group(1)
+        if label == "符合":
+            return "match"
+        if label == "不符合":
+            return "mismatch"
+        return "partial"
+    return None
 
 
 def score_segment(desc: str, keywords: List[str]) -> float:
     """
-    片段主题分：优先采纳 VLM 首行【主题判定】，否则退回 score_text 关键词打分。
+    片段主题分：优先采纳 VLM 首行“主题判定”（兼容旧格式），否则退回 score_text 关键词打分。
     """
     base = score_text(desc, keywords)
     verdict = parse_leading_theme_verdict(desc)
@@ -288,7 +311,7 @@ def select_and_scatter(
     """
     核心选片逻辑，返回 (scattered_clips, metadata_summary)。
 
-    1. 对每个视频的每个片段打分（若 seg_desc 含【主题判定】则优先采用，否则关键词打分）
+    1. 对每个视频的每个片段打分（若 seg_desc 含“主题判定”则优先采用，否则关键词打分）
     2. 视频总分 = 所有片段分数之和
     3. 选出全部 video_score > 0 的视频（主题相关，越多越好）；
        若相关视频数 < min_videos，从剩余视频中按片段数补充

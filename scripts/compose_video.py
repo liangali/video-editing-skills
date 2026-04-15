@@ -266,12 +266,11 @@ def wrap_text(text: str, max_len: int) -> str:
 
 
 def escape_drawtext_text(value: str) -> str:
-    # Escape text for drawtext. Keep \n for line breaks.
+    # Escape text for drawtext.
     value = value.replace("\\", r"\\")
     value = value.replace(":", r"\:")
     value = value.replace(",", r"\,")
     value = value.replace("'", r"\'")
-    value = value.replace("\n", r"\n")
     return value
 
 
@@ -605,43 +604,50 @@ def render_subtitle(
     会从关键帧解码但只编码 in_point 之后的帧，彻底避免 copy 模式的 pre-roll 问题。
     """
     subtitle_text = wrap_text(subtitle_text, max_line_len)
-    escaped_text = escape_drawtext_text(subtitle_text)
-
-    filter_parts = []
-    if font_file:
-        font_value = escape_drawtext_path(str(font_file))
-        filter_parts.append(f"fontfile={font_value}")
-
-    # 始终走 text=，使用 \n 显式换行，避免 textfile 在不同平台/字体下出现换行乱码方框。
-    filter_parts.append(f"text='{escaped_text}'")
+    subtitle_lines = subtitle_text.split("\n") if subtitle_text else []
+    if not subtitle_lines:
+        subtitle_lines = [""]
 
     if target_resolution and src_dims:
         tgt_w, tgt_h = target_resolution
         src_w, src_h = src_dims
         cw, ch, px, py = compute_content_area(src_w, src_h, tgt_w, tgt_h)
-        sub_x = f"{px}+(({cw})-text_w)/2"
-        sub_y = str(py + int(ch * 0.85))
+        sub_x_expr = f"{px}+(({cw})-text_w)/2"
+        sub_y_base_expr = str(py + int(ch * 0.85))
     else:
-        sub_x = "(w-text_w)/2"
-        sub_y = "h*0.85"
+        sub_x_expr = "(w-text_w)/2"
+        sub_y_base_expr = "h*0.85"
 
-    filter_parts.extend(
-        [
-            f"x={sub_x}",
-            f"y={sub_y}",
-            f"fontsize={font_size}",
-            "fontcolor=white",
-            "box=1",
-            "boxcolor=black@0.5",
-        ]
-    )
-    drawtext = "drawtext=" + ":".join(filter_parts)
+    line_step = max(1, int(font_size * 1.2))
+    line_count = len(subtitle_lines)
+    drawtext_filters: List[str] = []
+    for idx, line in enumerate(subtitle_lines):
+        escaped_line = escape_drawtext_text(line)
+        filter_parts = []
+        if font_file:
+            font_value = escape_drawtext_path(str(font_file))
+            filter_parts.append(f"fontfile={font_value}")
+        filter_parts.extend(
+            [
+                f"text='{escaped_line}'",
+                f"x={sub_x_expr}",
+                (
+                    "y="
+                    f"({sub_y_base_expr})-(({line_count - 1})*{line_step}/2)+({idx}*{line_step})"
+                ),
+                f"fontsize={font_size}",
+                "fontcolor=white",
+                "box=1",
+                "boxcolor=black@0.5",
+            ]
+        )
+        drawtext_filters.append("drawtext=" + ":".join(filter_parts))
 
     if target_resolution:
         w, h = target_resolution
-        vf = f"{build_scale_pad_filter(w, h)},{drawtext}"
+        vf = ",".join([build_scale_pad_filter(w, h), *drawtext_filters])
     else:
-        vf = drawtext
+        vf = ",".join(drawtext_filters)
 
     cmd = [
         ffmpeg,
