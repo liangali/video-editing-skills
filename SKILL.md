@@ -73,18 +73,19 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 - `source_video` 和 BGM `file_path` 必须是**绝对路径**
 - BGM 路径 = `<SKILL_DIR>\resource\bgm\` + `bgm_style.json` 中的文件名
 
-### Clip 约束（C1–C8）
+### Clip 约束（C1–C9）
 
 | 编号 | 规则 |
 |------|------|
 | C1 | `(source_video, source_segment_id)` 组合全局唯一，不可重复 |
-| C2 | `clips` 中不同 `source_video` 数量 ≥ 6（输入视频不足 6 时按实际上限并说明） |
+| C2 | 若存在 `candidate_clips.json`：先保证每个已入选 `source_video` 至少使用 1 段（受总片段数上限约束）；若总片段数不足以覆盖全部已入选视频，按 `video_score` 从高到低优先覆盖 |
 | C3 | 同一 `source_video` 最多使用 3 段（storyboard_guard 默认阈值） |
 | C4 | 相邻两个 clip 不得来自同一 `source_video` |
 | C5 | `in_point` = 对应 `seg_start`，`out_point` = `seg_end`，`duration = out_point − in_point > 0` |
 | C6 | `source_segment_id` 必须是 output_vlm.json 对应视频的有效 `seg_id` |
 | C7 | `source_video` 必须是 `<VIDEO_DIR>` 中实际存在的文件 |
 | C8 | 单片段时长：最短 ≥ 1.5s，最长 ≤ 目标时长的 25% |
+| C9 | 若存在 `candidate_clips.json`，`storyboard.json` 的每个 `(source_video, source_segment_id)` 必须来自 `candidate_clips`，禁止引入候选池外片段 |
 
 **实际输出时长公式：** `sum(clip.duration) − sum(有转场片段的 transition.duration)`
 例：14 个 3s 片段 + 13 个 0.8s 转场 → 42 − 10.4 = 31.6s ≈ 30s
@@ -104,7 +105,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 写入 `storyboard.json` 后**必须立即执行**：
 
 ```bash
-"<VENV_PYTHON>" "<SKILL_DIR>\scripts\storyboard_guard.py" --storyboard "<WORKSPACE_DIR>\storyboard.json" --output-vlm "<WORKSPACE_DIR>\output_vlm.json" --mode validate
+"<VENV_PYTHON>" "<SKILL_DIR>\scripts\storyboard_guard.py" --storyboard "<WORKSPACE_DIR>\storyboard.json" --output-vlm "<WORKSPACE_DIR>\output_vlm.json" --candidate-clips "<WORKSPACE_DIR>\candidate_clips.json" --mode validate
 ```
 
 | 退出码 | 动作 |
@@ -112,7 +113,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 | `0` | 通过，进入阶段 4 |
 | 非 `0` | **返回步骤 3.2/3.3 重新选片与重排，禁止进入阶段 4** |
 
-> 需要自动修复时：先执行 `--mode autofix --write-back`，再重新 `--mode validate`，只有 validate=0 才允许合成。
+> `storyboard_guard.py` 只做检查，不做自动修复。若 validate 失败，必须回到阶段 3 依据 `validation_errors` 重新选片、重排、重写 `storyboard.json`，再重新 `--mode validate`；只有 validate=0 才允许合成。
 
 ---
 
@@ -209,7 +210,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 | `--device` | `GPU` | GPU 失败时可回退 `CPU` |
 | `--seg-duration` | `3.0` | 段时长（秒） |
 | `--frames-per-seg` | `8` | 每段提取帧数 |
-| `--theme` | 无 | **强烈建议传入**，与阶段 2.5 `--theme` 一致；触发「首行主题判定」输出，便于 `select_clips.py` 解析 |
+| `--theme` | 无 | **强烈建议传入**，与阶段 2.5 `--theme` 一致；触发「首行主题判定总结 + 标签」输出，便于 `select_clips.py` 解析 |
 | `--prompt` | 见下 | 不传或与脚本内置默认相同时，在提供 `--theme` 下使用**主题感知模板**（首行判定 + 画面描述） |
 
 **无 `--theme` 时的默认提示词（仅画面描述）：**
@@ -219,13 +220,14 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 
 **有 `--theme` 时的输出约定（写入 `seg_desc`，供选片）：**
 
-1. 第 1 行：`【主题判定】符合` / `【主题判定】不符合` / `【主题判定】部分符合`（三选一原文）
-2. 第 2 行起：按默认画面描述要求输出（场景环境、人物动作、画面构图、光线氛围、运镜方式，不超过100字）
+1. 第 1 行：先写一句基于画面的主题判定总结，句末括号中给出且只给出一个最终标签。标准格式示例：`主题判定: 画面以节庆灯笼为主体，节日氛围明确（符合）`
+2. 标签只能是 `符合` / `部分符合` / `不符合` 之一；禁止输出 `符合/部分符合/不符合` 这种候选项列表
+3. 第 2 行起：按默认画面描述要求输出（场景环境、人物动作、画面构图、光线氛围、运镜方式，不超过100字）
 
 **需求驱动自定义 `--prompt`**（用户指定了 mood/pacing/must_capture 等需额外强调时）：仍建议保留 `--theme`；将 `--prompt` 设为例如：
 
 ```
-请根据以下剪辑目标补充分析：氛围是「<MOOD>」，节奏要求「<PACING>」。重点捕捉与「<MUST_CAPTURE>」相关的画面线索；在遵守首行【主题判定】格式前提下，画面描述须突出与目标风格相关的信息，并包含场景环境、人物动作、画面构图、光线氛围、运镜方式，输出不超过100字。
+请根据以下剪辑目标补充分析：氛围是「<MOOD>」，节奏要求「<PACING>」。重点捕捉与「<MUST_CAPTURE>」相关的画面线索；在遵守首行“主题判定总结 + 唯一标签”格式前提下，画面描述须突出与目标风格相关的信息，并包含场景环境、人物动作、画面构图、光线氛围、运镜方式，输出不超过100字。
 ```
 
 （脚本会在自定义 `--prompt` 前自动附加「主题 + 首行判定格式」说明。）
@@ -274,7 +276,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 ### 脚本执行逻辑
 
 1. 从 `--theme` 生成整词 + 2-字 bigram 关键词列表
-2. 逐片段评分：若 `seg_desc` 含 `【主题判定】符合/部分符合/不符合`，**优先采用该判定**（符合保底分、不符合强制 0 分、部分符合中间档），否则仅用句子级关键词与否定词匹配
+2. 逐片段评分：若 `seg_desc` 首行含 `主题判定: <总结>（符合/部分符合/不符合）`，**优先采用括号中的最终标签**（符合保底分、不符合强制 0 分、部分符合中间档；兼容旧版英文与旧版中文判定头），否则仅用句子级关键词与否定词匹配
 3. 视频总分 = 所有片段得分之和；按总分降序排列
 4. 选出全部 `video_score > 0` 的视频；不足 `--min-videos` 时用片段最丰富的剩余视频补充
 5. 两轮选片：第 1 轮每视频取最高分 1 段（广覆盖），第 2 轮再取第 2 段
@@ -308,6 +310,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 - `source_video` / `source_segment_id` / `timecode` 直接复制到 storyboard.json
 - `seg_desc`、`theme_score`、`video_rank` 等辅助字段**不**写入 storyboard.json
 - AI 可调整顺序或选取子集，但**不应从候选池以外引入新片段**
+- 视为硬规则：若引入候选池外片段，`storyboard_guard.py --candidate-clips ...` 校验必然失败
 
 **✓ 自检：** candidate_clips.json 已生成 · `total_candidate_clips` ≥ 6
 
@@ -397,7 +400,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 
 #### 3.2.3 为每句字幕匹配最佳片段
 
-对每条字幕选 `seg_desc` 意境最匹配的片段，遵循 **Clip 约束 C1–C8**。
+对每条字幕选 `seg_desc` 意境最匹配的片段，遵循 **Clip 约束 C1–C9**。
 
 | 字幕情绪 | 应匹配的 seg_desc 类型 |
 |----------|---------------------|
@@ -411,7 +414,12 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 - 字幕与画面**互补**：字幕说感受，画面给证据
 - 优先选 `seg_desc` 内容丰富的片段
 - 避免连续 3+ 个同类场景；动静交替排列
-- 选片顺序优先保证不同 `source_video` 的覆盖率，再按需为各源补第 2、第 3 段
+- 当存在 `candidate_clips.json` 时，严格按以下顺序选片：
+  1) 先做“首轮覆盖”：只从“存在 `主题判定: <总结>（符合）` 片段”的 `source_video` 中取，每个视频先取 1 段（且该段最终标签必须为“符合”）
+  2) 若首轮后仍未达到目标片段数，再做“第二轮补齐”：从“仅有部分符合、无符合片段”的视频中按 `video_score` 从高到低补 1 段
+  3) 若第二轮后仍不够，再允许重复 `source_video`，按 `video_score` 从高到低补第 2 段、第 3 段
+  4) 在满足上面规则后，再做叙事情绪与节奏微调（不得破坏 C1/C3/C4）
+- 即使当前时长已经满足，只要仍可先覆盖更多高优先级不同视频，也**不得过早重复 `source_video`**
 
 ---
 
@@ -425,6 +433,53 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 | 开头/结尾质量 | 这两个位置最重要，不理想优先替换 |
 
 发现问题则回到 3.2.2/3.2.3 调整，通常迭代 1-2 轮即可。
+
+#### 3.3.1 Guard 失败后的重选与重写
+
+`storyboard_guard.py` 只负责报告问题，**不做自动修复**。因此当 validate 返回非 0 时，必须按下述流程重新生成一版完整的 `storyboard.json`：
+
+1. 先完整阅读 `validation_errors`
+2. 判断错误属于哪一类：非法片段 / 覆盖不足 / 相邻同源 / 每源过多 / 时长偏差 / 时码或 seg_id 非法 / 字幕为空
+3. 回到 `candidate_clips.json` 重新选片或重排；必要时重写全部字幕，不要只局部打补丁
+4. **始终重新生成整个 `storyboard.json`**，不要在旧文件上做零散修补
+5. 写入后重新运行 `storyboard_guard.py --mode validate`
+6. 只有 validate 返回 `0`，才允许进入阶段 4
+
+**重写原则：**
+- 优先保留叙事主线，再修正局部选片
+- 若一个片段被替换，必须重新检查它前后两句字幕是否仍连贯
+- 若错误涉及覆盖率或时长，通常应整体重排片段顺序，而不是只替换单个 clip
+- 若错误涉及 candidate 约束，所有片段必须重新以 `candidate_clips.json` 为唯一来源检查一遍
+
+**`validation_errors` -> 处理动作对照表：**
+
+| 错误特征 | 处理动作 |
+|------|------|
+| `片段不在 candidate_clips 中` | 删除该非法片段；只从 `candidate_clips.json` 中重选替代片段；重写该片段及其相邻 1-2 句字幕，确保叙事不断裂 |
+| `source_video 覆盖不足` | 回到 `candidate_clips.json`，优先补入尚未使用的视频；按“先符合、后部分符合、最后才重复来源”的规则整体重排 |
+| `相邻片段来自同一 source_video` | 优先交换顺序打散；若无法打散，则替换其中一段为别的候选视频；然后重读整段字幕，确认情绪过渡自然 |
+| `超过每源上限` | 从超额视频中删去低优先级片段；优先补入未使用或使用更少的候选视频；必要时同步压缩重复表达的字幕 |
+| `时长偏差过大` 且 **过长** | 优先删去 `video_score` 低、叙事贡献弱、与前后表达重复的片段；删片后必须重排顺序并重写结尾或过渡句 |
+| `时长偏差过大` 且 **过短** | 优先从未使用的高分候选视频补 1 段；若已覆盖充分，再补重复来源的第 2/3 段；补片后重写新增位置前后字幕 |
+| `存在过早重复来源` | 优先移除重复来源中的后续片段，补入尚未覆盖的高优先级候选视频；保持叙事主线不变，并重写被替换片段前后 1-2 句字幕 |
+| `seg_id 不在 output_vlm` / `source_video 不在 output_vlm` | 视为非法引用；该片段整段废弃，重新从候选池中选择合法片段 |
+| `duration != out-in` / `out_point <= in_point` | 不手工修数值；直接废弃该片段并从候选池中换一段合法片段 |
+| `voiceover.text 为空` | 补写该句字幕；同时检查前后字幕是否仍满足 S1-S5，而不是只填一个空字符串 |
+
+**重选顺序硬规则：**
+- 第 1 轮：先从“存在 `主题判定: <总结>（符合）` 片段”的不同视频中，每视频取 1 段
+- 第 2 轮：若还不够，再从“只有 `部分符合`、无 `符合`”的视频中，每视频取 1 段
+- 第 3 轮：仍不够时，才允许重复来源，补第 2 段、第 3 段
+- 即使时长已满足，只要仍有更高优先级且未覆盖的不同视频，重复来源也视为错误选片，应先补覆盖再允许重复
+- 若当前时长已满足且 `unique_source_videos >= min_unique_videos`，不要为了覆盖率再主动引入新来源；只修非法片段、相邻同源或字幕问题
+
+**重写 storyboard 的最小检查清单：**
+- 所有 `(source_video, source_segment_id)` 均存在于 `candidate_clips.json`
+- 相邻片段不同源
+- 每源片段数不超过上限
+- 实际时长大致落在 target 容差内
+- 每句字幕不空、少描述画面、多表达感受
+- 最终顺序仍然有开篇、展开、递进、收尾
 
 ---
 
@@ -477,7 +532,7 @@ BGM 自动循环、淡入 1s + 淡出 1.5s，与原视频音频 amix 混合（co
 
 **写入前验证：**
 1. `theme`、`target_duration_seconds` 存在
-2. Clip 约束 **C1–C8** 全部满足
+2. Clip 约束 **C1–C9** 全部满足
 3. 字幕约束 **S1–S4** 全部满足
 4. `transition.type` 是有效值；最后一个片段无 transition
 5. 粗估实际时长与 target 大致匹配（见全局规范时长公式）
