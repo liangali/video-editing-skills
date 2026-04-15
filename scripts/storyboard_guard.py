@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +22,8 @@ class RuleConfig:
     allow_last_clip_shorter: bool = True
     duration_tolerance_sec: float = 6.0
     default_transition_duration: float = 0.8
+    subtitle_min_chars: int = 2
+    subtitle_max_chars_per_sec: float = 8.0
 
 
 def normalize_media_path(raw: str) -> str:
@@ -133,10 +136,162 @@ def build_segment_pool(output_vlm: dict) -> Dict[str, List[dict]]:
     return pool
 
 
+def build_candidate_video_order(candidate_data: dict) -> List[str]:
+    """
+    从 candidate_clips.json 计算视频优先级顺序（video_score 高->低）。
+    返回归一化后的 source_video 列表（去重后有序）。
+    """
+    clips = candidate_data.get("candidate_clips", []) or []
+    if not isinstance(clips, list):
+        return []
+
+    score_by_video: Dict[str, float] = {}
+    for c in clips:
+        src = normalize_media_path(str(c.get("source_video", "")))
+        if not src:
+            continue
+        try:
+            score = float(c.get("video_score", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+        if src not in score_by_video or score > score_by_video[src]:
+            score_by_video[src] = score
+
+    ordered = sorted(score_by_video.keys(), key=lambda s: score_by_video[s], reverse=True)
+    return ordered
+
+
+def _parse_theme_verdict(seg_desc: str) -> str:
+    text = str(seg_desc or "").strip()
+    up = text.upper()
+    first_line = text.splitlines()[0] if text else ""
+    if re.search(r"主题判定\s*[:：][^\n]{0,200}?符合", first_line):
+        return "match"
+    if re.search(r"主题判定\s*[:：][^\n]{0,200}?部分符合", first_line):
+        return "partial"
+    if re.search(r"主题判定\s*[:：][^\n]{0,200}?不符合", first_line):
+        return "mismatch"
+    # backward compatibility
+    if up.startswith("THEME_VERDICT: MATCH") or up.startswith("THEME_VERDICT： MATCH"):
+        return "match"
+    if up.startswith("THEME_VERDICT: PARTIAL") or up.startswith("THEME_VERDICT： PARTIAL"):
+        return "partial"
+    if up.startswith("THEME_VERDICT: MISMATCH") or up.startswith("THEME_VERDICT： MISMATCH"):
+        return "mismatch"
+    # backward compatibility (legacy bracketed 中文判定头)
+    if text.startswith("\u3010主题判定\u3011符合"):
+        return "match"
+    if text.startswith("\u3010主题判定\u3011部分符合"):
+        return "partial"
+    if text.startswith("\u3010主题判定\u3011不符合"):
+        return "mismatch"
+    return "unknown"
+
+
+def build_candidate_rounds(candidate_data: dict) -> Tuple[List[str], List[str]]:
+    """
+    两轮视频覆盖顺序：
+    - round1: 该视频至少有一个“符合”片段
+    - round2: 该视频没有“符合”，但至少有一个“部分符合”片段
+    两轮内部均按 video_score 高->低。
+    """
+    clips = candidate_data.get("candidate_clips", []) or []
+    if not isinstance(clips, list):
+        return [], []
+
+    meta: Dict[str, Dict[str, object]] = {}
+    for c in clips:
+        src = normalize_media_path(str(c.get("source_video", "")))
+        if not src:
+            continue
+        verdict = _parse_theme_verdict(str(c.get("seg_desc", "")))
+        try:
+            score = float(c.get("video_score", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+        if src not in meta:
+            meta[src] = {"video_score": score, "has_match": False, "has_partial": False}
+        meta[src]["video_score"] = max(float(meta[src]["video_score"]), score)
+        if verdict == "match":
+            meta[src]["has_match"] = True
+        if verdict == "partial":
+            meta[src]["has_partial"] = True
+
+    round1 = sorted(
+        [s for s, m in meta.items() if bool(m["has_match"])],
+        key=lambda s: float(meta[s]["video_score"]),
+        reverse=True,
+    )
+    round2 = sorted(
+        [s for s, m in meta.items() if (not bool(m["has_match"])) and bool(m["has_partial"])],
+        key=lambda s: float(meta[s]["video_score"]),
+        reverse=True,
+    )
+    return round1, round2
+
+
+def build_candidate_pair_set(candidate_data: dict) -> Set[Tuple[str, int]]:
+    """
+    从 candidate_clips.json 构建允许使用的片段集合：
+    {(normalized_source_video, source_segment_id), ...}
+    """
+    pairs: Set[Tuple[str, int]] = set()
+    clips = candidate_data.get("candidate_clips", []) or []
+    if not isinstance(clips, list):
+        return pairs
+    for c in clips:
+        src = normalize_media_path(str(c.get("source_video", "")))
+        try:
+            seg_id = int(c.get("source_segment_id", -1))
+        except (TypeError, ValueError):
+            seg_id = -1
+        if src and seg_id >= 0:
+            pairs.add((src, seg_id))
+    return pairs
+
+
+def build_candidate_video_score_map(candidate_data: dict) -> Dict[str, float]:
+    """
+    从 candidate_clips.json 提取每个 source_video 的 video_score（取最大值）。
+    """
+    score_map: Dict[str, float] = {}
+    clips = candidate_data.get("candidate_clips", []) or []
+    if not isinstance(clips, list):
+        return score_map
+    for c in clips:
+        src = normalize_media_path(str(c.get("source_video", "")))
+        if not src:
+            continue
+        try:
+            score = float(c.get("video_score", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+        if src not in score_map or score > score_map[src]:
+            score_map[src] = score
+    return score_map
+
+
+def build_candidate_segment_pool(
+    candidate_data: dict,
+    output_pool: Dict[str, List[dict]],
+) -> Dict[str, List[dict]]:
+    """
+    将 output_vlm 片段池裁剪为 candidate_clips 允许使用的子集。
+    """
+    allowed_pairs = build_candidate_pair_set(candidate_data)
+    sub_pool: Dict[str, List[dict]] = {}
+    for src, segs in output_pool.items():
+        picked = [s for s in segs if (src, int(s.get("seg_id", -1))) in allowed_pairs]
+        if picked:
+            sub_pool[src] = picked
+    return sub_pool
+
+
 def validate_storyboard(
     storyboard: dict,
     cfg: RuleConfig,
     output_vlm: Optional[dict] = None,
+    candidate_data: Optional[dict] = None,
     check_source_exists: bool = False,
 ) -> List[str]:
     errors: List[str] = []
@@ -185,6 +340,18 @@ def validate_storyboard(
         vo = (c.get("voiceover") or {}).get("text", "")
         if not str(vo).strip():
             errors.append(f"clip#{i}: voiceover.text 为空")
+        else:
+            vo_text = str(vo).strip()
+            char_count = len(vo_text)
+            if char_count < cfg.subtitle_min_chars:
+                errors.append(
+                    f"clip#{i}: 字幕过短，当前 {char_count} 字，最少 {cfg.subtitle_min_chars} 字"
+                )
+            max_chars = max(cfg.subtitle_min_chars, int(math.ceil(dur * cfg.subtitle_max_chars_per_sec)))
+            if char_count > max_chars:
+                errors.append(
+                    f"clip#{i}: 字幕过长，当前 {char_count} 字，超出时长可读上限 {max_chars} 字"
+                )
 
     # 规则：相邻不可同源
     for i in range(len(clips) - 1):
@@ -204,6 +371,38 @@ def validate_storyboard(
             f"source_video 覆盖不足: 当前 {len(unique_videos)}，要求至少 {cfg.min_unique_videos}"
         )
 
+    actual_duration = effective_story_duration(clips, cfg.default_transition_duration)
+
+    # 规则：若提供 candidate_clips.json，广度覆盖始终第一优先级。
+    # 只要还能先覆盖更多高优先级不同视频，就不允许提前重复来源；与是否已满足目标时长无关。
+    if candidate_data is not None:
+        # 硬规则：storyboard 只能使用 candidate_clips 中出现过的片段
+        allowed_pairs = build_candidate_pair_set(candidate_data)
+        if allowed_pairs:
+            for i, c in enumerate(clips, start=1):
+                pair = clip_key(c)
+                if pair not in allowed_pairs:
+                    src_name = Path(pair[0]).name if pair[0] else str(c.get("source_video", ""))
+                    errors.append(
+                        f"clip#{i}: 片段不在 candidate_clips 中: {src_name} seg_id={pair[1]}"
+                    )
+
+        round1, round2 = build_candidate_rounds(candidate_data)
+        if round1 or round2:
+            planned_sources = round1 + round2
+            expected_unique = min(len(clips), len(planned_sources))
+            first_pick = min(expected_unique, len(round1))
+            second_pick = max(0, expected_unique - first_pick)
+            must_cover = round1[:first_pick] + round2[:second_pick]
+            missing = [v for v in must_cover if v not in unique_videos]
+            if missing:
+                missing_names = [Path(v).name for v in missing]
+                errors.append(
+                    "未满足 candidate 广度优先覆盖规则: "
+                    f"应先覆盖有“符合”片段的视频（前 {first_pick} 个），"
+                    f"不足再覆盖仅“部分符合”视频（前 {second_pick} 个）；缺失: {missing_names}"
+                )
+
     # 规则：同一 source_video 最多 per_video_max_clips 段
     for src, cnt in per_video.items():
         if cnt > cfg.per_video_max_clips:
@@ -213,10 +412,9 @@ def validate_storyboard(
 
     # 规则：时长大致匹配
     if target > 0:
-        actual = effective_story_duration(clips, cfg.default_transition_duration)
-        if abs(actual - target) > cfg.duration_tolerance_sec:
+        if abs(actual_duration - target) > cfg.duration_tolerance_sec:
             errors.append(
-                f"时长偏差过大: target={target:.3f}s, estimated={actual:.3f}s, "
+                f"时长偏差过大: target={target:.3f}s, estimated={actual_duration:.3f}s, "
                 f"tolerance={cfg.duration_tolerance_sec:.3f}s"
             )
 
@@ -267,6 +465,7 @@ def autofix_storyboard(
     storyboard: dict,
     cfg: RuleConfig,
     output_vlm: dict,
+    candidate_data: Optional[dict] = None,
 ) -> Tuple[dict, List[str]]:
     """
     轻量自动修复策略：
@@ -282,6 +481,13 @@ def autofix_storyboard(
     if not clips or not pool:
         return fixed, ["autofix 跳过：clips 或 output_vlm 为空"]
 
+    # 若提供 candidate_clips，则 autofix 仅允许使用候选池内片段
+    if candidate_data is not None:
+        candidate_pool = build_candidate_segment_pool(candidate_data, pool)
+        if candidate_pool:
+            pool = candidate_pool
+            notes.append("已启用 candidate 限定：autofix 仅在 candidate_clips 片段池内替换")
+
     used_pairs = {clip_key(c) for c in clips}
     per_video = Counter(
         normalize_media_path(str(c.get("source_video", ""))) for c in clips
@@ -290,18 +496,97 @@ def autofix_storyboard(
     all_sources = [s for s in pool.keys() if s]
     min_seg = effective_min_clip_duration(cfg)
 
-    # Step 1: 补齐最少视频覆盖
-    missing_sources = [s for s in all_sources if s not in unique_used]
-    while len(unique_used) < cfg.min_unique_videos and missing_sources:
-        # 找一个“最超配额”的 clip 进行替换
+    # Step 0: 先修复“候选池外片段”问题（仅在 candidate 模式启用）
+    if candidate_data is not None:
+        allowed_pairs = build_candidate_pair_set(candidate_data)
+        if allowed_pairs:
+            for idx, c in enumerate(clips):
+                cur_pair = clip_key(c)
+                if cur_pair in allowed_pairs:
+                    continue
+
+                cur_src = normalize_media_path(str(c.get("source_video", "")))
+                repl_src_candidates: List[str] = []
+                if cur_src in pool:
+                    repl_src_candidates.append(cur_src)
+                repl_src_candidates += sorted(
+                    [s for s in all_sources if s != cur_src],
+                    key=lambda s: (per_video[s] >= cfg.per_video_max_clips, per_video[s]),
+                )
+
+                replacement: Optional[Tuple[str, dict]] = None
+                for cand_src in repl_src_candidates:
+                    if per_video[cand_src] >= cfg.per_video_max_clips and cand_src != cur_src:
+                        continue
+                    seg = _pick_available_segment(cand_src, pool, used_pairs, min_seg)
+                    if seg is None:
+                        continue
+                    replacement = (cand_src, seg)
+                    break
+
+                if replacement is None:
+                    notes.append(
+                        f"clip#{idx+1}: 候选池外片段未修复（未找到 candidate 内可替代 segment）"
+                    )
+                    continue
+
+                old_src = cur_src
+                old_pair = cur_pair
+                new_src, new_seg = replacement
+
+                used_pairs.discard(old_pair)
+                if old_src:
+                    per_video[old_src] -= 1
+                    if per_video[old_src] <= 0:
+                        per_video.pop(old_src, None)
+                        unique_used.discard(old_src)
+
+                _set_clip_from_segment(c, new_src, new_seg)
+                used_pairs.add(clip_key(c))
+                per_video[new_src] += 1
+                unique_used.add(new_src)
+                notes.append(
+                    f"clip#{idx+1}: 候选池外片段已替换为 {Path(new_src).name} seg#{new_seg['seg_id']}"
+                )
+
+    target = float((fixed.get("storyboard_metadata") or {}).get("target_duration_seconds", 0))
+    actual_duration = effective_story_duration(clips, cfg.default_transition_duration)
+    duration_satisfied = target > 0 and actual_duration >= target
+
+    # Step 1: 补齐覆盖
+    # - 若提供 candidate_clips 且时长未满足：按 candidate 两轮覆盖规则补齐
+    # - 若时长已满足：不再为了覆盖率主动引入新来源；仅在 unique_videos 低于 min_unique_videos 时，
+    #   退回到“补足最少视频数”的基础规则
+    current_unique_count = len(unique_used)
+    if candidate_data and not duration_satisfied:
+        round1, round2 = build_candidate_rounds(candidate_data)
+        need_cover = min(len(clips), len(round1) + len(round2))
+        first_pick = min(need_cover, len(round1))
+        second_pick = max(0, need_cover - first_pick)
+        target_sources = round1[:first_pick] + round2[:second_pick]
+    elif current_unique_count < cfg.min_unique_videos:
+        target_sources = all_sources[: cfg.min_unique_videos]
+    else:
+        target_sources = []
+
+    missing_sources = [s for s in target_sources if s and s not in unique_used]
+    while missing_sources:
+        # 优先替换“已重复来源”的片段（满足你的要求：先消重复再补新源）
         replace_idx = -1
-        for idx, c in enumerate(clips):
-            src = normalize_media_path(str(c.get("source_video", "")))
-            if per_video[src] > cfg.per_video_max_clips:
+        for idx in range(len(clips) - 1, -1, -1):
+            src = normalize_media_path(str(clips[idx].get("source_video", "")))
+            if per_video[src] > 1:
                 replace_idx = idx
                 break
+
+        # 若没有可替换的重复来源，退回旧策略：先找超配额，再替换末尾
         if replace_idx < 0:
-            # 没有超配额，替换后部 clip 以尽量减少叙事影响
+            for idx, c in enumerate(clips):
+                src = normalize_media_path(str(c.get("source_video", "")))
+                if per_video[src] > cfg.per_video_max_clips:
+                    replace_idx = idx
+                    break
+        if replace_idx < 0:
             replace_idx = len(clips) - 1
 
         new_src = missing_sources.pop(0)
@@ -323,6 +608,9 @@ def autofix_storyboard(
         per_video[normalize_media_path(str(clips[replace_idx].get("source_video", "")))] += 1
         unique_used.add(normalize_media_path(new_src))
         notes.append(f"clip#{replace_idx+1}: 替换为新来源 {Path(new_src).name} seg#{seg['seg_id']}")
+
+        # 动态更新缺失集合（避免重复计算）
+        missing_sources = [s for s in target_sources if s and s not in unique_used]
 
     # Step 2: 压制过度重复（每源 <= per_video_max_clips）
     for idx, c in enumerate(clips):
@@ -352,6 +640,48 @@ def autofix_storyboard(
 
         if not replacement_done and per_video[src] > cfg.per_video_max_clips:
             notes.append(f"clip#{idx+1}: 仍超过每源上限，未找到替代来源")
+
+    # Step 2.5: 若时长过长，自动删减低分来源片段
+    # 删除策略：按 candidate 的 video_score 升序优先删（同分优先删重复来源），
+    # 同时尽量不低于 min_unique_videos。
+    if target > 0:
+        upper_bound = target + cfg.duration_tolerance_sec
+        current_duration = effective_story_duration(clips, cfg.default_transition_duration)
+        score_map = build_candidate_video_score_map(candidate_data or {})
+        while current_duration > upper_bound and clips:
+            candidate_indices: List[Tuple[float, int, int]] = []
+            current_unique = len([s for s in per_video.keys() if s])
+            for idx, c in enumerate(clips):
+                src = normalize_media_path(str(c.get("source_video", "")))
+                cnt = per_video[src]
+                # 若该源仅 1 段且已到最小覆盖，不再删它
+                if cnt <= 1 and current_unique <= cfg.min_unique_videos:
+                    continue
+                score = float(score_map.get(src, 0.0))
+                # 排序键：低分优先删除；同分优先删重复来源；再按靠后片段
+                candidate_indices.append((score, -cnt, -idx))
+
+            if not candidate_indices:
+                notes.append("时长删减停止：已无可删除片段（受最小覆盖约束）")
+                break
+
+            candidate_indices.sort()
+            _, _, neg_idx = candidate_indices[0]
+            rm_idx = -neg_idx
+            rm_clip = clips.pop(rm_idx)
+            rm_pair = clip_key(rm_clip)
+            rm_src = normalize_media_path(str(rm_clip.get("source_video", "")))
+            used_pairs.discard(rm_pair)
+            if rm_src:
+                per_video[rm_src] -= 1
+                if per_video[rm_src] <= 0:
+                    per_video.pop(rm_src, None)
+                    unique_used.discard(rm_src)
+            notes.append(
+                f"删减时长: 删除 clip#{rm_idx+1} ({Path(rm_src).name if rm_src else 'unknown'})，"
+                f"video_score={score_map.get(rm_src, 0.0):.2f}"
+            )
+            current_duration = effective_story_duration(clips, cfg.default_transition_duration)
 
     # Step 3: 尝试打散相邻同源（交换）
     for i in range(len(clips) - 1):
@@ -407,21 +737,30 @@ def build_report(
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Validate/fix storyboard.json against video-editing rules."
+        description="Validate storyboard.json against video-editing rules."
     )
     p.add_argument("--storyboard", required=True, help="Path to storyboard.json")
     p.add_argument(
         "--output-vlm",
         default=None,
-        help="Path to output_vlm.json (needed for seg_id/source validation and autofix)",
+        help="Path to output_vlm.json (needed for seg_id/source validation)",
+    )
+    p.add_argument(
+        "--candidate-clips",
+        default=None,
+        help="Path to candidate_clips.json (enable first-round per-video coverage check)",
     )
     p.add_argument(
         "--mode",
         choices=["validate", "autofix"],
         default="validate",
-        help="validate: only check; autofix: try fix, then re-validate",
+        help="validate: only check; autofix: deprecated and no longer supported",
     )
-    p.add_argument("--write-back", action="store_true", help="Write fixed storyboard back to file")
+    p.add_argument(
+        "--write-back",
+        action="store_true",
+        help="Deprecated compatibility flag; storyboard_guard no longer writes files",
+    )
     p.add_argument("--report-json", default=None, help="Optional path to write report json")
     p.add_argument("--min-unique-videos", type=int, default=6)
     p.add_argument(
@@ -445,12 +784,32 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--allow-last-clip-shorter", action="store_true")
     p.add_argument("--duration-tolerance-sec", type=float, default=6.0)
     p.add_argument("--default-transition-duration", type=float, default=0.8)
+    p.add_argument(
+        "--subtitle-min-chars",
+        type=int,
+        default=2,
+        help="Minimum subtitle length per clip (default: 2)",
+    )
+    p.add_argument(
+        "--subtitle-max-chars-per-sec",
+        type=float,
+        default=8.0,
+        help="Maximum subtitle chars per second (default: 8.0)",
+    )
     p.add_argument("--check-source-exists", action="store_true")
     return p.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.mode == "autofix":
+        print(
+            "ERROR: storyboard_guard.py 现在只做检查，不再自动修复。\n"
+            "请回到阶段 3 根据 validation_errors 重新选片/重排并重写 storyboard.json，"
+            "然后再次运行 --mode validate。"
+        )
+        return 2
+
     storyboard_path = Path(args.storyboard).resolve()
     if not storyboard_path.exists():
         print(f"ERROR: storyboard not found: {storyboard_path}")
@@ -464,6 +823,14 @@ def main() -> int:
             return 2
         output_vlm = read_json(output_vlm_path)
 
+    candidate_data = None
+    if args.candidate_clips:
+        candidate_path = Path(args.candidate_clips).resolve()
+        if not candidate_path.exists():
+            print(f"ERROR: candidate_clips not found: {candidate_path}")
+            return 2
+        candidate_data = read_json(candidate_path)
+
     cfg = RuleConfig(
         min_unique_videos=args.min_unique_videos,
         per_video_max_clips=args.per_video_max,
@@ -472,36 +839,24 @@ def main() -> int:
         allow_last_clip_shorter=args.allow_last_clip_shorter,
         duration_tolerance_sec=args.duration_tolerance_sec,
         default_transition_duration=args.default_transition_duration,
+        subtitle_min_chars=max(0, int(args.subtitle_min_chars)),
+        subtitle_max_chars_per_sec=max(0.1, float(args.subtitle_max_chars_per_sec)),
     )
 
     storyboard = read_json(storyboard_path)
-    work_storyboard = storyboard
-    autofix_notes: List[str] = []
-
-    if args.mode == "autofix":
-        if output_vlm is None:
-            print("ERROR: mode=autofix requires --output-vlm")
-            return 2
-        work_storyboard, autofix_notes = autofix_storyboard(storyboard, cfg, output_vlm)
-
     errors = validate_storyboard(
-        work_storyboard,
+        storyboard,
         cfg,
         output_vlm=output_vlm,
+        candidate_data=candidate_data,
         check_source_exists=args.check_source_exists,
     )
 
-    report = build_report(work_storyboard, cfg)
-    if autofix_notes:
-        report["autofix_notes"] = autofix_notes
+    report = build_report(storyboard, cfg)
     report["validation_errors"] = errors
 
     if args.report_json:
         write_json(Path(args.report_json), report)
-
-    if args.mode == "autofix" and args.write_back:
-        write_json(storyboard_path, work_storyboard)
-        print(f"INFO: fixed storyboard written: {storyboard_path}")
 
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if errors:
