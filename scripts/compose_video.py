@@ -1034,11 +1034,23 @@ def main() -> int:
 
     ffprobe = resolve_ffprobe(args.ffmpeg)
 
-    # 探测所有源视频尺寸（去重），用于方向自动检测和字幕精确定位
+    # 尝试从 Stage 1 写入的 runtime_env.json 加载 video_dims_cache，避免重复调用 ffprobe
+    workspace_dir = storyboard_path.resolve().parent
+    _dims_cache: dict = {}
+    _runtime_env = workspace_dir / "runtime_env.json"
+    if _runtime_env.exists():
+        try:
+            _raw = json.loads(_runtime_env.read_text(encoding="utf-8"))
+            _dims_cache = {k: tuple(v) for k, v in (_raw.get("video_dims_cache") or {}).items()}
+        except Exception:
+            pass
+
+    # 探测所有源视频尺寸（去重），优先使用缓存，缓存缺失时才调 ffprobe
     unique_sources = {clip.source_video for clip in clips}
     source_dims: dict = {}
     for src in unique_sources:
-        source_dims[src] = get_video_dimensions(ffprobe, src)
+        key = str(src.resolve())
+        source_dims[src] = _dims_cache.get(key) or get_video_dimensions(ffprobe, src)
 
     # 按 clip_id 建立查找表，供后续 render_subtitle 使用
     clip_src_dims = {clip.clip_id: source_dims.get(clip.source_video) for clip in clips}
@@ -1064,7 +1076,6 @@ def main() -> int:
                 "Falling back to auto-detect from source clips."
             )
     if target_resolution is None and not args.target_resolution:
-        workspace_dir = storyboard_path.resolve().parent
         manifest_res = read_workspace_compose_target_resolution(workspace_dir)
         if manifest_res:
             target_resolution = manifest_res
