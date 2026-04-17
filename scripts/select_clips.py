@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import re
 from collections import defaultdict, deque
 from pathlib import Path
@@ -54,6 +55,23 @@ _NEGATION_WORDS = [
 
 # 句子边界标点（按句号/感叹号/问号/分号切，保留逗号在同一句内以捕获跨逗号的否定）
 _SENTENCE_ENDS = frozenset("。！？；\n")
+
+# ──────────────────────────────────────────────
+# 负面内容关键词（默认）
+# ──────────────────────────────────────────────
+# 命中任一词即对该片段施加惩罚（-2.0/词），使其在同分竞争中落败。
+# 可通过 --negative-keywords 追加自定义词，--no-default-negatives 关闭默认列表。
+_DEFAULT_NEGATIVE_CONTENT_KEYWORDS: List[str] = [
+    # 不看镜头
+    "背对镜头", "背对着镜头", "没有看镜头", "不看镜头", "低头", "低着头",
+    # 整理衣物/装备（非主动展示的动作）
+    "整理衣服", "整理衣物", "整理装备", "整理裤带", "系扣子", "系鞋带",
+    "调整裤带", "调整领带", "调整衣服", "整理扣子", "系着扣子",
+    # 使用设备（非 vlog 内容）
+    "看手机", "玩手机", "低头看手机",
+    # 模糊/曝光问题
+    "画面模糊", "严重过曝", "严重欠曝",
+]
 
 
 def extract_keywords(theme: str, extra: Optional[List[str]] = None) -> List[str]:
@@ -200,19 +218,50 @@ def parse_leading_theme_verdict(text: str) -> Optional[str]:
     return None
 
 
-def score_segment(desc: str, keywords: List[str]) -> float:
+def score_negative_content(desc: str, negative_keywords: List[str]) -> float:
+    """
+    返回负面内容惩罚分（≥0）。每命中一个负面词扣 2.0 分，同一位置不重复计。
+    """
+    if not desc or not negative_keywords:
+        return 0.0
+    penalty = 0.0
+    scored_spans: List[Tuple[int, int]] = []
+    for kw in negative_keywords:
+        start = 0
+        while True:
+            idx = desc.find(kw, start)
+            if idx == -1:
+                break
+            end = idx + len(kw)
+            if not any(s <= idx and end <= e for s, e in scored_spans):
+                penalty += 2.0
+                scored_spans.append((idx, end))
+            start = idx + 1
+    return penalty
+
+
+def score_segment(
+    desc: str,
+    keywords: List[str],
+    negative_keywords: Optional[List[str]] = None,
+) -> float:
     """
     片段主题分：优先采纳 VLM 首行"主题判定"（兼容旧格式），否则退回 score_text 关键词打分。
+    命中负面内容关键词时施加惩罚（每词 -2.0），最终 floor 到 0。
     """
     base = score_text(desc, keywords)
     verdict = parse_leading_theme_verdict(desc)
     if verdict == "mismatch":
         return 0.0
     if verdict == "match":
-        return max(base, 3.0)
-    if verdict == "partial":
-        return max(base, 1.5)
-    return base
+        raw = max(base, 3.0)
+    elif verdict == "partial":
+        raw = max(base, 1.5)
+    else:
+        raw = base
+    if negative_keywords:
+        raw -= score_negative_content(desc, negative_keywords)
+    return max(0.0, raw)
 
 
 # ──────────────────────────────────────────────
@@ -353,6 +402,7 @@ def select_and_scatter(
     min_clip_duration: float = 1.5,
     extra_keywords: Optional[List[str]] = None,
     n_segs: int = 2,
+    negative_keywords: Optional[List[str]] = None,
 ) -> Tuple[List[dict], dict]:
     """
     核心选片逻辑，返回 (scattered_clips, metadata_summary)。
@@ -389,7 +439,7 @@ def select_and_scatter(
                         "seg_end": seg_end,
                         "duration": dur,
                         "seg_desc": desc,
-                        "theme_score": score_segment(desc, keywords),
+                        "theme_score": score_segment(desc, keywords, negative_keywords),
                     }
                 )
             except (KeyError, ValueError, TypeError):
@@ -434,7 +484,9 @@ def select_and_scatter(
     for rank, video in enumerate(selected_videos, start=1):
         pairs = _build_seq_candidates(video["segments"], n_segs)
         if pairs:
-            best = max(pairs, key=lambda p: float(p["theme_score"]))
+            top_score = max(float(p["theme_score"]) for p in pairs)
+            top_pairs = [p for p in pairs if float(p["theme_score"]) >= top_score]
+            best = random.choice(top_pairs)
             all_clips.append(
                 {
                     "source_video": video["video_path"],
@@ -539,7 +591,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--extra-keywords",
         default="",
-        help="附加关键词，逗号分隔（如 '灯笼,烟花,喜庆'）",
+        help="附加主题关键词，逗号分隔（如 '灯笼,烟花,喜庆'）",
+    )
+    p.add_argument(
+        "--negative-keywords",
+        default="",
+        help=(
+            "额外负面内容词，逗号分隔（如 '低头,背对镜头'）。"
+            "命中则对片段扣 2.0 分/词，与默认负面词表叠加生效。"
+        ),
+    )
+    p.add_argument(
+        "--no-default-negatives",
+        action="store_true",
+        help="禁用内置默认负面词表，只使用 --negative-keywords 指定的词",
     )
     return p.parse_args()
 
@@ -561,6 +626,10 @@ def main() -> int:
         else None
     )
 
+    neg_kws: List[str] = [] if args.no_default_negatives else list(_DEFAULT_NEGATIVE_CONTENT_KEYWORDS)
+    if args.negative_keywords:
+        neg_kws += [k.strip() for k in args.negative_keywords.split(",") if k.strip()]
+
     clips, summary = select_and_scatter(
         output_vlm=output_vlm,
         theme=args.theme,
@@ -568,6 +637,7 @@ def main() -> int:
         min_clip_duration=args.min_clip_duration,
         extra_keywords=extra_kws,
         n_segs=args.n_segs,
+        negative_keywords=neg_kws or None,
     )
 
     if "error" in summary:

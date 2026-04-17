@@ -53,7 +53,7 @@ python "<SKILL_DIR>\scripts\prepare_workspace.py" --video-dir "<VIDEO_DIR>" --us
 # 可选：追加 --prompt "自定义分析要求…"（与默认提示词不同时，会在自定义内容前附加同样的首行判定格式）
 
 # 阶段 2.5: 片段预选（必须执行；N_SEGS/MIN_VIDEOS 由阶段 2.5 参数推导公式计算）
-"<VENV_PYTHON>" "<SKILL_DIR>\scripts\select_clips.py" --output-vlm "<WORKSPACE_DIR>\output_vlm.json" --theme "<THEME>" --output "<WORKSPACE_DIR>\candidate_clips.json" --min-videos <MIN_VIDEOS> --n-segs <N_SEGS>
+"<VENV_PYTHON>" "<SKILL_DIR>\scripts\select_clips.py" --output-vlm "<WORKSPACE_DIR>\output_vlm.json" --theme "<THEME>" --output "<WORKSPACE_DIR>\candidate_clips.json" --min-videos <MIN_VIDEOS> --n-segs <N_SEGS> [--negative-keywords "自定义词"]
 
 # 阶段 3: AI 生成 storyboard.json → 写入后立即执行 Guard 校验（见全局规范）
 
@@ -288,7 +288,8 @@ MIN_VIDEOS = max(6, N_CLIPS)                   # 每个视频贡献 1 个 clip
     --output      "<WORKSPACE_DIR>\candidate_clips.json" \
     --min-videos  <MIN_VIDEOS> \
     --n-segs      <N_SEGS> \
-    [--extra-keywords "灯笼,烟花,喜庆"]
+    [--extra-keywords "灯笼,烟花,喜庆"] \
+    [--negative-keywords "自定义负面词1,自定义负面词2"]
 ```
 
 | 参数 | 默认值 | 说明 |
@@ -297,6 +298,19 @@ MIN_VIDEOS = max(6, N_CLIPS)                   # 每个视频贡献 1 个 clip
 | `--n-segs` | `2` | 每个候选 clip 覆盖的连续段数（使用推导值；2≈6s，3≈9s，4≈12s） |
 | `--min-clip-duration` | `1.5` | 单段最短时长阈值（秒）；配对后 clip 约 n_segs×3s，无需在此提高 |
 | `--extra-keywords` | 空 | 额外主题关键词，逗号分隔 |
+| `--negative-keywords` | 空 | 额外负面内容词，逗号分隔；命中则扣分（与内置默认词表叠加） |
+| `--no-default-negatives` | 关闭 | 禁用内置负面词表，只使用 `--negative-keywords` 指定的词 |
+
+**内置负面词表**（默认生效，无需手动填写）：
+
+| 类别 | 词条 |
+|------|------|
+| 不看镜头 | 背对镜头、低头、没有看镜头 |
+| 整理衣物 | 整理衣服/裤带/扣子、系扣子、系鞋带 |
+| 使用设备 | 看手机、玩手机 |
+| 画面质量 | 画面模糊、严重过曝、严重欠曝 |
+
+> 用户有特殊场景（如 vlog 主题允许整理装备的慢镜头）可用 `--no-default-negatives` 关闭默认词表。
 
 ### 脚本执行逻辑
 
