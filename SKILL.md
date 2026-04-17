@@ -533,8 +533,9 @@ MIN_VIDEOS = max(6, N_CLIPS)                   # 每个视频贡献 1 个 clip
 ### 步骤 3.4 BGM 选择
 
 1. 读取 `<SKILL_DIR>\resource\bgm\bgm_style.json`
-2. 根据视频氛围从最匹配的 `style_tag` 分类中选择一首
-3. 构建绝对路径：`<SKILL_DIR>\resource\bgm\<file_path>`（见路径规范）
+2. 先按主题匹配 `theme_tags`（每首 2-3 个主题），再用 `style_tag` 做兜底
+3. 至少选出 2-3 首候选，优先避免与最近一次视频使用同一首
+4. 构建绝对路径：`<SKILL_DIR>\resource\bgm\<file_path>`（见路径规范）
 
 | 视频氛围 | 首选分类 | 备选分类 |
 |----------|----------|----------|
@@ -549,10 +550,11 @@ MIN_VIDEOS = max(6, N_CLIPS)                   # 每个视频贡献 1 个 clip
 | 节庆、年味、热闹场景 | 欢腾热闹 / 红火喜庆 | 温馨雪夜 |
 | 美食探店、烟火气 | 慵懒爵士 | 清新明快 |
 | 科技产品、数码展示 | 极简未来 | 都市活力 |
+| 广告视频（品牌/产品/促销） | 极简未来 / 都市活力 / 清新明快 | 慵懒爵士 / 欢腾热闹 |
 | 其他氛围 | 温暖治愈 | 清新明快 |
 
 BGM 自动循环、淡入 1s + 淡出 1.5s，与原视频音频 amix 混合（compose_video.py 自动处理）。
-无匹配时：首选 → 备选 → 任选一首。
+匹配优先级：`theme_tags` 命中 > `style_tag` 首选 > `style_tag` 备选 > 任选一首。
 
 ---
 
@@ -618,7 +620,8 @@ BGM 自动循环、淡入 1s + 淡出 1.5s，与原视频音频 amix 混合（co
   "audio_design": {
     "background_music": {
       "file_path": "<SKILL_DIR>\\resource\\bgm\\xxx.mp3",
-      "style_tag": "舒缓优美"
+      "style_tag": "舒缓优美",
+      "theme_tags": ["日常旅游", "城市漫游"]
     }
   }
 }
