@@ -155,6 +155,24 @@ def probe_compose_target_resolution_from_video_paths(
     return infer_compose_target_resolution_from_dims(dims)
 
 
+def probe_all_video_dims(
+    ffprobe: str,
+    videos: list[Path],
+) -> dict:
+    """
+    对每个视频只调用一次 ffprobe，返回可序列化的 {str(绝对路径): [display_w, display_h]}。
+    供 prepare_workspace 写入 runtime_env.json，compose_video 读取复用，避免重复探测。
+    """
+    cache: dict = {}
+    for video in videos:
+        info = _probe_video_stream_info(ffprobe, video)
+        if info:
+            w, h, rot = info
+            dw, dh = (h, w) if rot in (90, 270) else (w, h)
+            cache[str(video.resolve())] = [dw, dh]
+    return cache
+
+
 def read_workspace_compose_target_resolution(workspace_dir: Path) -> Optional[Tuple[int, int]]:
     """读取工作区 runtime_env.json 中的 compose_target_resolution（阶段 1 写入）。"""
     manifest = workspace_dir / "runtime_env.json"

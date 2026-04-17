@@ -28,9 +28,8 @@ from pathlib import Path
 
 from bootstrap import bootstrap_environment
 from skill_runtime import (
-    get_video_dimensions,
-    get_video_rotation_degrees,
-    probe_compose_target_resolution_from_video_paths,
+    infer_compose_target_resolution_from_dims,
+    probe_all_video_dims,
     write_runtime_manifest,
 )
 
@@ -125,14 +124,14 @@ def main() -> int:
         return 1
 
     # 5. 探测视频目录画幅多数，供合成阶段读取 runtime_env.json
+    # 每个视频只调用一次 ffprobe，结果同时写入缓存供 Stage 4 复用
     ffprobe = str(runtime["ffprobe"])
-    source_dims = [get_video_dimensions(ffprobe, v) for v in videos]
-    rotations = [get_video_rotation_degrees(ffprobe, v) for v in videos]
-    rotated_n = sum(1 for r in rotations if r in (90, 270))
-    portrait_n = sum(1 for d in source_dims if d and d[1] > d[0])
-    landscape_n = sum(1 for d in source_dims if d and d[0] >= d[1])
+    video_dims_cache = probe_all_video_dims(ffprobe, videos)
+    dims_list = [tuple(v) for v in video_dims_cache.values()]
+    portrait_n = sum(1 for d in dims_list if d[1] > d[0])
+    landscape_n = sum(1 for d in dims_list if d[0] >= d[1])
     total_ok = portrait_n + landscape_n
-    tw, th = probe_compose_target_resolution_from_video_paths(ffprobe, videos)
+    tw, th = infer_compose_target_resolution_from_dims(dims_list)
     res_str = f"{tw}x{th}"
     if total_ok > 0 and portrait_n > landscape_n:
         print(
@@ -148,17 +147,15 @@ def main() -> int:
         print(
             f"[准备] 警告：未能探测任一视频分辨率，默认横屏画布 {res_str}（与 compose 兜底一致）"
         )
-    if rotated_n > 0:
-        print(
-            f"[准备] 检测到 {rotated_n} 个视频含旋转元数据（90/270）；"
-            "横竖统计已按显示方向矫正。"
-        )
 
-    # 6. 写入运行时清单
+    # 6. 写入运行时清单（含 video_dims_cache 供 Stage 4 复用）
     try:
         manifest_path = write_runtime_manifest(
             workspace,
-            merge={"compose_target_resolution": res_str},
+            merge={
+                "compose_target_resolution": res_str,
+                "video_dims_cache": video_dims_cache,
+            },
         )
         print(f"[准备] runtime_env.json 已写入：{manifest_path}")
     except OSError as e:

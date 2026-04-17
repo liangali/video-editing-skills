@@ -1,41 +1,42 @@
 <#
 .SYNOPSIS
-    video-editing-skills 前置环境检查脚本（硬件 + Python）
+    Preflight environment check script for video-editing-skills (hardware + Python)
 
 .DESCRIPTION
-    阶段 1 - 硬件检查（满足任一条件）：
-      条件 A - Intel 白名单独显：Arc A770（16GB）/ Arc B580（12GB），CPU 型号不限
-      条件 B - Intel iGPU 平台：MTL / LNL / ARL / PTL CPU + Intel iGPU + 内存 > 16 GB
+    Phase 1 - Hardware check (must satisfy either condition):
+      Condition A - Intel whitelisted dGPU: Arc A770 (16GB) / Arc B580 (12GB), CPU unrestricted
+      Condition B - Intel iGPU platform: MTL / LNL / ARL / PTL CPU + Intel iGPU + RAM > 16 GB
 
-    阶段 2 - Python >= 3.10 检查：
-      仅检查宿主 Python 是否可用，不再执行系统级自动安装。
-      项目本地 .venv、requirements、ffmpeg、模型的准备统一放到阶段 1：准备。
+    Phase 2 - Python >= 3.10 check:
+      Only checks whether host Python is available. No system-level auto-install.
+      Project-local .venv, requirements, ffmpeg, and model setup are handled in Phase 1: Prepare.
 
-    两阶段全部通过 → exit 0；任一失败 → exit 1
+    Both phases pass -> exit 0; any failure -> exit 1
 
 .NOTES
-    扩展独显白名单：在 $DGPU_WHITELIST 数组中追加型号编号即可。
+    To extend the dGPU whitelist, append model IDs to the $DGPU_WHITELIST array.
 #>
 
 # ============================================================
-# 配置项
+# Configuration
 # ============================================================
 
-# 独显白名单：只写型号编号（如 "B580"），不写 "Arc B580"
-# 实际显卡名含 (TM)，如 "Intel(R) Arc(TM) B580 Graphics"，全名匹配会失败
-$DGPU_WHITELIST = @("A770", "B580", "B50" ,"B60")
+# dGPU whitelist: use model IDs only (e.g. "B580"), not "Arc B580"
+# Actual GPU names include "(TM)", e.g. "Intel(R) Arc(TM) B580 Graphics";
+# exact full-name matching can be brittle.
+$DGPU_WHITELIST = @("A770", "B580", "B390", "B50" ,"B60")
 $dGpuPattern    = $DGPU_WHITELIST -join "|"
 
 $PYTHON_MIN_MAJOR = 3
 $PYTHON_MIN_MINOR = 10
 
 # ============================================================
-# 工具函数
+# Utility functions
 # ============================================================
 
 function Find-PythonMin {
     <#
-    .SYNOPSIS 在 PATH 中查找 Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR，返回可用命令字符串；未找到返回 $null
+    .SYNOPSIS Find Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR in PATH. Returns a runnable command string, or $null if not found.
     #>
     foreach ($cmd in @("python", "python3")) {
         try {
@@ -48,7 +49,7 @@ function Find-PythonMin {
             }
         } catch {}
     }
-    # py launcher 方式（Windows Python Launcher）
+    # Windows Python Launcher path
     foreach ($pyver in @("3.13","3.12","3.11","3.10")) {
         try {
             $ver = "$(& py -$pyver --version 2>&1)"
@@ -75,21 +76,21 @@ function Get-PythonVersion([string]$cmd) {
 }
 
 # ============================================================
-# 阶段 1：硬件检查
+# Phase 1: Hardware check
 # ============================================================
 Write-Host ""
-Write-Host "=== 阶段 1：Intel 硬件平台检查 ============================="
+Write-Host "=== Phase 1: Intel hardware platform check =================="
 
 $cpu        = (Get-WmiObject Win32_Processor).Name
 $allGpus    = Get-WmiObject Win32_VideoController
 $totalMemGB = [math]::Round((Get-WmiObject Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1)
 
-# 独显：名称匹配白名单
+# dGPU: name matches whitelist
 $dgpu = $allGpus |
     Where-Object { $_.Name -match "Intel" -and $_.Name -match $dGpuPattern } |
     Select-Object -First 1
 
-# iGPU：Intel 集成显卡，排除白名单独显
+# iGPU: Intel integrated GPU, excluding whitelisted dGPU models
 $igpu = $allGpus |
     Where-Object {
         $_.Name -match "Intel" -and
@@ -98,7 +99,7 @@ $igpu = $allGpus |
     } |
     Select-Object -First 1
 
-# CPU 平台代号（WMI 名称含 (TM)，如 "Intel(R) Core(TM) Ultra 7 155H"）
+# CPU platform code (WMI name includes (TM), e.g. "Intel(R) Core(TM) Ultra 7 155H")
 $platform = $null
 if     ($cpu -match "Ultra \d+\s+1\d{2}")                                            { $platform = "MTL" }
 elseif ($cpu -match "Ultra \d+\s+2\d{2}V")                                           { $platform = "LNL" }
@@ -108,32 +109,32 @@ elseif ($cpu -match "Ultra \d+\s+3\d{2}")                                       
 $hwPass = $false
 
 if ($dgpu) {
-    # 条件 A：有白名单独显，CPU 不限
-    Write-Host "✅ [PASS] 条件 A - Intel 独显（白名单）：$($dgpu.Name)"
-    Write-Host "ℹ️  [INFO] 独显路线：跳过 CPU 平台与内存检查"
+    # Condition A: whitelisted dGPU found, CPU unrestricted
+    Write-Host "[PASS] Condition A - Intel dGPU (whitelist): $($dgpu.Name)"
+    Write-Host "[INFO] dGPU route: skip CPU platform and memory checks"
     $hwPass = $true
 } else {
-    # 条件 B：MTL/LNL/ARL/PTL + iGPU + 内存 > 16 GB
-    Write-Host "ℹ️  [INFO] 未检测到白名单独显，检查条件 B（iGPU 平台）..."
+    # Condition B: MTL/LNL/ARL/PTL + iGPU + RAM > 16 GB
+    Write-Host "[INFO] Whitelisted dGPU not found. Checking Condition B (iGPU platform)..."
     $condB = $true
 
     if ($platform) {
-        Write-Host "✅ [PASS] CPU 平台：$platform（$cpu）"
+        Write-Host "[PASS] CPU platform: $platform ($cpu)"
     } else {
-        Write-Host "❌ [FAIL] CPU 不支持：$cpu"
-        Write-Host "         需要 Intel MTL/LNL/ARL/PTL，或配备白名单独显（$($DGPU_WHITELIST -join ' / ')）"
+        Write-Host "[FAIL] Unsupported CPU: $cpu"
+        Write-Host "       Requires Intel MTL/LNL/ARL/PTL, or a whitelisted dGPU ($($DGPU_WHITELIST -join ' / '))"
         $condB = $false
     }
     if ($igpu) {
-        Write-Host "✅ [PASS] Intel iGPU：$($igpu.Name)"
+        Write-Host "[PASS] Intel iGPU: $($igpu.Name)"
     } else {
-        Write-Host "❌ [FAIL] 未检测到 Intel iGPU"
+        Write-Host "[FAIL] Intel iGPU not detected"
         $condB = $false
     }
     if ($totalMemGB -gt 16) {
-        Write-Host "✅ [PASS] 内存：${totalMemGB} GB"
+        Write-Host "[PASS] RAM: ${totalMemGB} GB"
     } else {
-        Write-Host "❌ [FAIL] 内存不足：${totalMemGB} GB（需 > 16 GB）"
+        Write-Host "[FAIL] Insufficient RAM: ${totalMemGB} GB (required: > 16 GB)"
         $condB = $false
     }
     $hwPass = $condB
@@ -142,36 +143,36 @@ if ($dgpu) {
 if (-not $hwPass) {
     Write-Host "============================================================"
     Write-Host ""
-    Write-Host "❌ 硬件检查未通过，禁止执行后续技能。"
+    Write-Host "[FAIL] Hardware check failed. Stop before running subsequent steps."
     Write-Host ""
-    Write-Host "   支持条件 A：Intel 白名单独显（$($DGPU_WHITELIST -join ' / ')）"
-    Write-Host "   支持条件 B：Intel MTL/LNL/ARL/PTL CPU + Intel iGPU + 内存 > 16 GB"
+    Write-Host "   Supported Condition A: Intel whitelisted dGPU ($($DGPU_WHITELIST -join ' / '))"
+    Write-Host "   Supported Condition B: Intel MTL/LNL/ARL/PTL CPU + Intel iGPU + RAM > 16 GB"
     exit 1
 }
 
 Write-Host "============================================================"
-Write-Host "✅ 阶段 1 通过"
+Write-Host "[PASS] Phase 1 passed"
 
 # ============================================================
-# 阶段 2：Python >= 3.10 检查
+# Phase 2: Python >= 3.10 check
 # ============================================================
 Write-Host ""
-Write-Host "=== 阶段 2：Python >= 3.10 环境检查 ========================"
+Write-Host "=== Phase 2: Python >= 3.10 environment check ==============="
 
 $pythonCmd = Find-PythonMin
 
 if ($pythonCmd) {
     $verStr = Get-PythonVersion $pythonCmd
-    Write-Host "✅ [PASS] Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR：$verStr（命令：$pythonCmd）"
+    Write-Host "[PASS] Python >= $PYTHON_MIN_MAJOR.${PYTHON_MIN_MINOR}: $verStr (command: $pythonCmd)"
 } else {
-    Write-Host "❌ [FAIL] 未找到 Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR。"
+    Write-Host "[FAIL] Python >= $PYTHON_MIN_MAJOR.$PYTHON_MIN_MINOR not found."
     Write-Host ""
-    Write-Host "   请先手动安装 Python 3.10+，然后再执行阶段 1：准备。"
-    Write-Host "   阶段 1 会统一创建 <SKILL_DIR>\\.venv 并安装 requirements / ffmpeg / 模型。"
+    Write-Host "   Please install Python 3.10+ first, then rerun Phase 1: Prepare."
+    Write-Host "   Phase 1 will create <SKILL_DIR>\\.venv and install requirements / ffmpeg / model."
     exit 1
 }
 
 Write-Host "============================================================"
 Write-Host ""
-Write-Host "✅ 所有检查通过（硬件 + 宿主 Python），可执行阶段 1：准备。"
+Write-Host "[PASS] All checks passed (hardware + host Python). You can proceed with Phase 1: Prepare."
 exit 0

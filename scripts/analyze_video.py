@@ -15,11 +15,12 @@ analyze_video.py - 阶段 2：纯 Python 视频分析，替代 FLAMA。
     --seg-duration  段时长秒数（可选，默认 3.0）
     --frames-per-seg  每段提取帧数（可选，默认 4）
     --scale       帧缩放比例（可选，默认 0.25）
-    --max-tokens  VLM 最大生成 token 数（可选，默认 100；若指定 --theme 则实际至少 160）
+    --max-tokens  VLM 最大生成 token 数（可选，默认 160；若指定 --theme 则实际至少 200）
 
 输出：
     output_vlm.json 格式:
     {
+      "vlm_prompt": "本次分析实际使用的提示词",
       "processed_videos": [{
         "input_video": "D:\\path\\video.mp4",
         "segments": [{
@@ -40,6 +41,7 @@ analyze_video.py - 阶段 2：纯 Python 视频分析，替代 FLAMA。
 import argparse
 import json
 import math
+import re
 import subprocess
 import sys
 import time
@@ -59,24 +61,50 @@ Image = None
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".wmv"}
 
 DEFAULT_PROMPT = (
-    "准确的描述这个视频片段中的主要内容，包括：场景环境、人物动作、"
-    "画面构图、光线氛围、运镜方式。输出不超过100字的简要描述。"
+    "准确的描述这个视频片段中的主要内容，包括：场景环境、人物动作、画面构图、光线氛围、运镜方式。输出不超过100字的描述。"
 )
+THEME_LABELS = ("部分符合", "不符合", "符合")
 
 
 def build_theme_aware_prompt(theme: str) -> str:
     """
-    带主题的 VLM 提示：首行固定【主题判定】，便于阅读与 select_clips 解析。
+    带主题的 VLM 提示：首行固定“主题判定: ...”，便于阅读与 select_clips 解析。
     """
     t = (theme or "").strip() or "（未指定）"
     return (
-        f"剪辑主题为「{t}」。请观察本段画面后严格按下列格式输出（不要输出题外说明）：\n"
-        "\n"
-        "第1行（必须，三选一原文）：【主题判定】符合  或  【主题判定】不符合  或  【主题判定】部分符合\n"
-        "（「符合」= 画面明显体现该主题；「部分符合」= 仅有弱相关元素；「不符合」= 与主题无关或相悖。）\n"
-        "\n"
-        f"第2行起：{DEFAULT_PROMPT}"
+        f"剪辑主题为「{t}」。请观察本段画面后严格按下列格式输出2行结果（不要输出题外说明）：\n"
+        "第1行（必须）回答结果格式：主题判定：标签；标签只能是“符合”或“部分符合”或“不符合”之一\n"
+        f"第2行(必须回答）：{DEFAULT_PROMPT}"
     )
+
+
+def build_theme_judgement_prompt(theme: str) -> str:
+    """
+    第一阶段提示词：只做主题判定，输出尽量短，减少 token 消耗。
+    """
+    t = (theme or "").strip() or "（未指定）"
+    return (
+        f"剪辑主题为「{t}」。请只判断该视频片段是否符合主题。\n"
+        "仅输出一行：主题判定：标签\n"
+        "其中标签只能是“符合”或“部分符合”或“不符合”之一。"
+    )
+
+
+def parse_theme_label(text: str) -> str | None:
+    """
+    从模型输出中解析主题标签。
+    优先匹配“主题判定：标签”格式，失败后回退到关键词匹配。
+    """
+    if not text:
+        return None
+    # 注意匹配顺序：必须先匹配更长词，避免“不符合”被“符合”前缀误吞。
+    m = re.search(r"主题判定\s*[:：]\s*(部分符合|不符合|符合)", text)
+    if m:
+        return m.group(1)
+    for label in THEME_LABELS:
+        if label in text:
+            return label
+    return None
 
 # ---------------------------------------------------------------------------
 # 视频发现
@@ -147,7 +175,7 @@ def extract_segment_frames(
     seg_end: float,
     num_frames: int = 4,
     scale: float = 0.25,
-) -> list[Image.Image]:
+ ) -> list[Image.Image]:
     """
     从视频指定时间段中等间隔提取帧。
 
@@ -254,7 +282,8 @@ def analyze_segment_vlm(
 def process_video(
     video_path: Path,
     pipeline,
-    prompt: str,
+    detail_prompt: str,
+    theme: str | None,
     seg_duration: float,
     frames_per_seg: int,
     scale: float,
@@ -284,7 +313,21 @@ def process_video(
         else:
             # VLM 推理
             try:
-                desc = analyze_segment_vlm(pipeline, frames, prompt, max_tokens)
+                if theme and theme.strip():
+                    judge_prompt = build_theme_judgement_prompt(theme.strip())
+                    judge_raw = analyze_segment_vlm(
+                        pipeline, frames, judge_prompt, max_new_tokens=32
+                    )
+                    label = parse_theme_label(judge_raw) or "不符合"
+                    if label in ("符合", "部分符合"):
+                        detail_desc = analyze_segment_vlm(
+                            pipeline, frames, detail_prompt, max_tokens
+                        )
+                        desc = f"主题判定：{label}\n{detail_desc}"
+                    else:
+                        desc = f"主题判定：{label}"
+                else:
+                    desc = analyze_segment_vlm(pipeline, frames, detail_prompt, max_tokens)
             except Exception as e:
                 desc = f"分析失败：{e}"
                 print(f"    段 {seg_id} VLM 推理失败：{e}", file=sys.stderr)
@@ -334,8 +377,8 @@ def parse_args() -> argparse.Namespace:
                         help="每段提取帧数（默认：8，配合视频模式 temporal_patch_size=2）")
     parser.add_argument("--scale", type=float, default=0.25,
                         help="帧缩放比例（默认：0.25）")
-    parser.add_argument("--max-tokens", type=int, default=100,
-                        help="VLM 最大生成 token 数（默认：100）")
+    parser.add_argument("--max-tokens", type=int, default=160,
+                        help="VLM 最大生成 token 160；若指定 --theme 则实际至少 200")
     return parser.parse_args()
 
 
@@ -384,24 +427,15 @@ def main() -> int:
     print(f"[分析] 设备：{args.device}")
     print(f"[分析] 段时长：{args.seg_duration}s，每段 {args.frames_per_seg} 帧，缩放 {args.scale}")
 
-    prompt = args.prompt
-    if args.theme and args.theme.strip():
-        if args.prompt == DEFAULT_PROMPT:
-            prompt = build_theme_aware_prompt(args.theme.strip())
-            print(f"[分析] 已启用主题感知提示词，主题：{args.theme.strip()!r}")
-        else:
-            prompt = (
-                f"剪辑主题为「{args.theme.strip()}」。\n"
-                "输出时第1行必须为下列之一（便于后续自动选片）：\n"
-                "【主题判定】符合 或 【主题判定】不符合 或 【主题判定】部分符合\n"
-                "第2行起再按下列要求分析：\n"
-                f"{args.prompt}"
-            )
-            print(f"[分析] 已在自定义提示前附加主题判定格式，主题：{args.theme.strip()!r}")
+    detail_prompt = args.prompt
+    theme = args.theme.strip() if args.theme and args.theme.strip() else None
+    if theme:
+        print(f"[分析] 已启用两阶段主题判定模式，主题：{theme!r}")
+        print("[分析] 阶段1：仅做主题判定；阶段2：仅对符合/部分符合片段做详细描述")
 
     max_tokens = args.max_tokens
-    if args.theme and args.theme.strip():
-        max_tokens = max(max_tokens, 160)
+    if theme:
+        max_tokens = max(max_tokens, 200)
 
     print()
 
@@ -417,7 +451,8 @@ def main() -> int:
         result = process_video(
             video_path=video_path,
             pipeline=pipeline,
-            prompt=prompt,
+            detail_prompt=detail_prompt,
+            theme=theme,
             seg_duration=args.seg_duration,
             frames_per_seg=args.frames_per_seg,
             scale=args.scale,
@@ -427,7 +462,12 @@ def main() -> int:
         results.append(result)
 
     # 写入输出
-    output_data = {"processed_videos": results}
+    output_data = {"vlm_prompt": detail_prompt, "processed_videos": results}
+    if theme:
+        output_data["vlm_prompts"] = {
+            "stage1_theme_judgement": build_theme_judgement_prompt(theme),
+            "stage2_detail_description": detail_prompt,
+        }
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with output_path.open("w", encoding="utf-8") as f:

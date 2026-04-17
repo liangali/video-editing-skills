@@ -266,12 +266,11 @@ def wrap_text(text: str, max_len: int) -> str:
 
 
 def escape_drawtext_text(value: str) -> str:
-    # Escape text for drawtext. Keep \n for line breaks.
+    # Escape text for drawtext.
     value = value.replace("\\", r"\\")
     value = value.replace(":", r"\:")
     value = value.replace(",", r"\,")
     value = value.replace("'", r"\'")
-    value = value.replace("\n", r"\n")
     return value
 
 
@@ -585,6 +584,28 @@ def add_bgm_to_video(
     ]
     run_cmd(cmd, dry_run=dry_run)
 
+def _build_subtitle_alpha_expr(
+    t_start: float,
+    t_end: float,
+    fade_dur: float,
+) -> str:
+    """构建字幕淡入淡出的 alpha 表达式。
+
+    在 t_start 到 t_start+fade_dur 线性淡入（0→1），
+    在 t_end-fade_dur 到 t_end 线性淡出（1→0），
+    中间保持 1。自动处理片段过短时 fade_dur 被压缩的情况。
+    """
+    half = (t_end - t_start) / 2
+    fd = min(fade_dur, half)
+    fi_end = t_start + fd
+    fo_start = t_end - fd
+    # 淡入段
+    fade_in = f"if(lt(t,{fi_end:.3f}),max(0,(t-{t_start:.3f})/{fd:.3f})"
+    # 淡出段
+    fade_out = f"if(gt(t,{fo_start:.3f}),max(0,({t_end:.3f}-t)/{fd:.3f}),1)"
+    return f"{fade_in},{fade_out})"
+
+
 def render_subtitle(
     ffmpeg: str,
     source_video: Path,
@@ -598,50 +619,77 @@ def render_subtitle(
     dry_run: bool,
     target_resolution: Optional[Tuple[int, int]] = None,
     src_dims: Optional[Tuple[int, int]] = None,
+    subtitle_fade_duration: float = 0.0,
 ) -> None:
     """从源视频直接提取+渲染字幕，单步完成。
 
     使用 input-side seek（-ss 在 -i 之前）配合 re-encode，ffmpeg 的 accurate_seek
     会从关键帧解码但只编码 in_point 之后的帧，彻底避免 copy 模式的 pre-roll 问题。
+
+    subtitle_fade_duration > 0 时，多段字幕（| 分隔）切换时有淡入淡出效果。
     """
-    subtitle_text = wrap_text(subtitle_text, max_line_len)
-    escaped_text = escape_drawtext_text(subtitle_text)
-
-    filter_parts = []
-    if font_file:
-        font_value = escape_drawtext_path(str(font_file))
-        filter_parts.append(f"fontfile={font_value}")
-
-    # 始终走 text=，使用 \n 显式换行，避免 textfile 在不同平台/字体下出现换行乱码方框。
-    filter_parts.append(f"text='{escaped_text}'")
+    # 支持用 | 分隔多句字幕，每句均分片段时长分段显示
+    subtitle_parts = [p.strip() for p in subtitle_text.split("|") if p.strip()]
+    if not subtitle_parts:
+        subtitle_parts = [""]
+    n_parts = len(subtitle_parts)
+    part_dur = clip_duration / n_parts
 
     if target_resolution and src_dims:
         tgt_w, tgt_h = target_resolution
         src_w, src_h = src_dims
         cw, ch, px, py = compute_content_area(src_w, src_h, tgt_w, tgt_h)
-        sub_x = f"{px}+(({cw})-text_w)/2"
-        sub_y = str(py + int(ch * 0.85))
+        sub_x_expr = f"{px}+(({cw})-text_w)/2"
+        sub_y_base_expr = str(py + int(ch * 0.85))
     else:
-        sub_x = "(w-text_w)/2"
-        sub_y = "h*0.85"
+        sub_x_expr = "(w-text_w)/2"
+        sub_y_base_expr = "h*0.85"
 
-    filter_parts.extend(
-        [
-            f"x={sub_x}",
-            f"y={sub_y}",
-            f"fontsize={font_size}",
-            "fontcolor=white",
-            "box=1",
-            "boxcolor=black@0.5",
-        ]
-    )
-    drawtext = "drawtext=" + ":".join(filter_parts)
+    line_step = max(1, int(font_size * 1.2))
+    drawtext_filters: List[str] = []
+    for part_idx, part_text in enumerate(subtitle_parts):
+        t_start = part_idx * part_dur
+        t_end = (part_idx + 1) * part_dur
+        enable_expr = f"between(t,{t_start:.3f},{t_end:.3f})"
+
+        use_fade = subtitle_fade_duration > 0 and n_parts > 1
+        if use_fade:
+            alpha_expr = _build_subtitle_alpha_expr(t_start, t_end, subtitle_fade_duration)
+
+        wrapped = wrap_text(part_text, max_line_len)
+        part_lines = wrapped.split("\n") if wrapped else [""]
+        line_count = len(part_lines)
+
+        for idx, line in enumerate(part_lines):
+            escaped_line = escape_drawtext_text(line)
+            filter_parts = []
+            if font_file:
+                font_value = escape_drawtext_path(str(font_file))
+                filter_parts.append(f"fontfile={font_value}")
+            filter_parts.extend(
+                [
+                    f"text='{escaped_line}'",
+                    f"x={sub_x_expr}",
+                    (
+                        "y="
+                        f"({sub_y_base_expr})-(({line_count - 1})*{line_step}/2)+({idx}*{line_step})"
+                    ),
+                    f"fontsize={font_size}",
+                    "fontcolor=white",
+                    "box=1",
+                    "boxcolor=black@0.5",
+                    f"enable='{enable_expr}'",
+                ]
+            )
+            if use_fade:
+                filter_parts.append(f"alpha='{alpha_expr}'")
+            drawtext_filters.append("drawtext=" + ":".join(filter_parts))
 
     if target_resolution:
         w, h = target_resolution
-        vf = f"{build_scale_pad_filter(w, h)},{drawtext}"
+        vf = ",".join([build_scale_pad_filter(w, h), *drawtext_filters])
     else:
-        vf = drawtext
+        vf = ",".join(drawtext_filters)
 
     cmd = [
         ffmpeg,
@@ -983,6 +1031,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--subtitle-fade-duration",
+        type=float,
+        default=0.5,
+        help=(
+            "Fade duration in seconds for subtitle segment transitions (| separated parts). "
+            "Set to 0 to disable. Default: 0.5"
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print ffmpeg commands without executing",
@@ -1028,11 +1085,23 @@ def main() -> int:
 
     ffprobe = resolve_ffprobe(args.ffmpeg)
 
-    # 探测所有源视频尺寸（去重），用于方向自动检测和字幕精确定位
+    # 尝试从 Stage 1 写入的 runtime_env.json 加载 video_dims_cache，避免重复调用 ffprobe
+    workspace_dir = storyboard_path.resolve().parent
+    _dims_cache: dict = {}
+    _runtime_env = workspace_dir / "runtime_env.json"
+    if _runtime_env.exists():
+        try:
+            _raw = json.loads(_runtime_env.read_text(encoding="utf-8"))
+            _dims_cache = {k: tuple(v) for k, v in (_raw.get("video_dims_cache") or {}).items()}
+        except Exception:
+            pass
+
+    # 探测所有源视频尺寸（去重），优先使用缓存，缓存缺失时才调 ffprobe
     unique_sources = {clip.source_video for clip in clips}
     source_dims: dict = {}
     for src in unique_sources:
-        source_dims[src] = get_video_dimensions(ffprobe, src)
+        key = str(src.resolve())
+        source_dims[src] = _dims_cache.get(key) or get_video_dimensions(ffprobe, src)
 
     # 按 clip_id 建立查找表，供后续 render_subtitle 使用
     clip_src_dims = {clip.clip_id: source_dims.get(clip.source_video) for clip in clips}
@@ -1058,7 +1127,6 @@ def main() -> int:
                 "Falling back to auto-detect from source clips."
             )
     if target_resolution is None and not args.target_resolution:
-        workspace_dir = storyboard_path.resolve().parent
         manifest_res = read_workspace_compose_target_resolution(workspace_dir)
         if manifest_res:
             target_resolution = manifest_res
@@ -1188,6 +1256,7 @@ def main() -> int:
                 dry_run=args.dry_run,
                 target_resolution=target_resolution,
                 src_dims=clip_src_dims.get(clip.clip_id),
+                subtitle_fade_duration=args.subtitle_fade_duration,
             )
         else:
             transcode_clip(
