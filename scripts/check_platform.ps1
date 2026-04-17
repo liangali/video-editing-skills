@@ -24,7 +24,7 @@
 # dGPU whitelist: use model IDs only (e.g. "B580"), not "Arc B580"
 # Actual GPU names include "(TM)", e.g. "Intel(R) Arc(TM) B580 Graphics";
 # exact full-name matching can be brittle.
-$DGPU_WHITELIST = @("A770", "B580", "B50" ,"B60")
+$DGPU_WHITELIST = @("A770", "B580", "B390", "B50" ,"B60")
 $dGpuPattern    = $DGPU_WHITELIST -join "|"
 
 $PYTHON_MIN_MAJOR = 3
