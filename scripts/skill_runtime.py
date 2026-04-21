@@ -1,5 +1,24 @@
 from __future__ import annotations
 
+"""
+skill_runtime.py - 全项目共享的运行时基础库。
+
+代码导读：
+- 提供路径常量（脚本目录、虚拟环境、模型目录、ffmpeg 路径）。
+- 提供环境准备（Python 版本检查、创建 `.venv`、安装 requirements）。
+- 提供视频元数据探测能力（分辨率、旋转角、横竖屏推断）。
+- 提供 runtime 清单读写（`runtime_env.json`）。
+
+关键逻辑：
+- 分辨率推断采用“多数决”：竖屏多 -> 1080x1920，否则 1920x1080。
+- 视频尺寸读取会考虑 rotation 元数据，避免竖屏视频误判。
+- requirements 是否需要重装通过 sha256 摘要戳判断。
+
+易错点：
+- ffprobe 输出异常或 JSON 不合法时，相关探测函数会返回 None。
+- `maybe_reexec_in_skill_venv()` 会直接重新拉起当前脚本并退出当前进程。
+"""
+
 import hashlib
 import json
 import subprocess
@@ -25,6 +44,43 @@ FFMPEG_PATH = BIN_DIR / "ffmpeg.exe"
 FFPROBE_PATH = BIN_DIR / "ffprobe.exe"
 MODELS_DIR = SKILL_DIR / "models"
 DEFAULT_MODEL_DIR = MODELS_DIR / DEFAULT_MODEL_NAME
+LAN_VLM_CONFIG_FILE = SKILL_DIR / "lan_vlm.json"
+
+
+def load_lan_vlm_config() -> Optional[dict[str, object]]:
+    """读取根目录 lan_vlm.json，成功返回配置字典，失败返回 None。"""
+    if not LAN_VLM_CONFIG_FILE.exists():
+        return None
+    try:
+        payload = json.loads(LAN_VLM_CONFIG_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        print(f"[lan-vlm] 配置文件解析失败：{LAN_VLM_CONFIG_FILE}")
+        return None
+    if not isinstance(payload, dict):
+        print(f"[lan-vlm] 配置文件格式无效（必须是 JSON 对象）：{LAN_VLM_CONFIG_FILE}")
+        return None
+    return payload
+
+
+def is_lan_vlm_enabled(config: Optional[dict[str, object]] = None) -> bool:
+    """判断是否启用局域网 VLM 模式。"""
+    if config is None:
+        config = load_lan_vlm_config()
+    if not config:
+        return False
+    return bool(config.get("enabled")) and str(config.get("backend", "")).lower() == "ollama"
+
+
+def get_lan_vlm_endpoint(config: Optional[dict[str, object]] = None) -> tuple[str, str]:
+    """
+    返回 (base_url, model)。
+    当配置缺省时使用计划中的默认值，避免调用端重复写默认逻辑。
+    """
+    if config is None:
+        config = load_lan_vlm_config() or {}
+    base_url = str(config.get("base_url") or "http://192.168.1.202:11434").strip()
+    model = str(config.get("model") or "qwen2.5vl:7b").strip()
+    return base_url, model
 
 
 def parse_resolution(res_str: str) -> Tuple[int, int]:
