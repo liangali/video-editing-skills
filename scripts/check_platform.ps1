@@ -17,6 +17,11 @@
     To extend the dGPU whitelist, append model IDs to the $DGPU_WHITELIST array.
 #>
 
+# 代码导读（补充）：
+# - 该脚本是“环境准入门禁”，先校验硬件，再校验主机 Python 版本。
+# - 通过后才建议进入后续 Prepare 阶段，避免运行中途因为基础环境不满足失败。
+# - 硬件判定规则为：白名单 dGPU 直通，或 Intel 指定平台 + iGPU + 内存阈值组合通过。
+
 # ============================================================
 # Configuration
 # ============================================================
@@ -29,6 +34,7 @@ $dGpuPattern    = $DGPU_WHITELIST -join "|"
 
 $PYTHON_MIN_MAJOR = 3
 $PYTHON_MIN_MINOR = 10
+$LAN_VLM_CONFIG = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\\lan_vlm.json"))
 
 # ============================================================
 # Utility functions
@@ -80,6 +86,29 @@ function Get-PythonVersion([string]$cmd) {
 # ============================================================
 Write-Host ""
 Write-Host "=== Phase 1: Intel hardware platform check =================="
+
+$skipHardwareGate = $false
+if (Test-Path -LiteralPath $LAN_VLM_CONFIG) {
+    try {
+        $raw = Get-Content -LiteralPath $LAN_VLM_CONFIG -Raw -Encoding UTF8
+        $cfg = $raw | ConvertFrom-Json
+        $enabled = $false
+        $backend = ""
+        if ($null -ne $cfg.enabled) { $enabled = [bool]$cfg.enabled }
+        if ($null -ne $cfg.backend) { $backend = "$($cfg.backend)".ToLower().Trim() }
+        if ($enabled -and $backend -eq "ollama") {
+            $skipHardwareGate = $true
+            Write-Host "[INFO] LAN VLM enabled via $LAN_VLM_CONFIG"
+            Write-Host "[PASS] Skip hardware gate (GPU/Intel platform checks bypassed)"
+        }
+    } catch {
+        Write-Host "[WARN] Failed to parse LAN VLM config: $LAN_VLM_CONFIG"
+    }
+}
+
+if ($skipHardwareGate) {
+    $hwPass = $true
+} else {
 
 $cpu        = (Get-WmiObject Win32_Processor).Name
 $allGpus    = Get-WmiObject Win32_VideoController
@@ -148,6 +177,7 @@ if (-not $hwPass) {
     Write-Host "   Supported Condition A: Intel whitelisted dGPU ($($DGPU_WHITELIST -join ' / '))"
     Write-Host "   Supported Condition B: Intel MTL/LNL/ARL/PTL CPU + Intel iGPU + RAM > 16 GB"
     exit 1
+}
 }
 
 Write-Host "============================================================"

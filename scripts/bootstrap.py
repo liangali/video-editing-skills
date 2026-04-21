@@ -1,5 +1,22 @@
 from __future__ import annotations
 
+"""
+bootstrap.py - 统一运行时引导入口（阶段 0）。
+
+代码导读：
+1) 通过 `ensure_skill_requirements()` 准备统一 `.venv` 与 Python 依赖。
+2) 通过子脚本 `setup_resources.py` 与 `setup_ov_model.py` 分别准备 ffmpeg 与模型。
+3) 该文件只做编排，不包含具体下载/安装细节（细节分别在对应脚本中）。
+
+依赖关系：
+- 运行时常量与环境能力来自 `skill_runtime.py`。
+- 外部子步骤通过 `subprocess.run()` 调用同目录脚本。
+
+易错点：
+- 子脚本返回码非 0 会直接抛异常并终止流程。
+- `--skip-*` 与 `--force-*` 参数组合时需理解优先级：skip 会直接跳过该步骤。
+"""
+
 import argparse
 import json
 import subprocess
@@ -10,6 +27,9 @@ from skill_runtime import (
     DEFAULT_MODEL_DIR,
     SCRIPT_DIR,
     ensure_skill_requirements,
+    get_lan_vlm_endpoint,
+    is_lan_vlm_enabled,
+    load_lan_vlm_config,
     runtime_summary,
 )
 
@@ -72,12 +92,27 @@ def bootstrap_environment(
     skip_ffmpeg: bool = False,
     skip_model: bool = False,
 ) -> dict[str, str]:
+    lan_cfg = load_lan_vlm_config()
+    lan_enabled = is_lan_vlm_enabled(lan_cfg)
+    if lan_enabled and not skip_model:
+        # 局域网模式下不需要准备本机 OpenVINO 模型目录。
+        print("[bootstrap] 检测到 LAN VLM 配置，自动跳过本机模型准备。")
+        skip_model = True
+
     venv_python = ensure_skill_requirements(force=force_requirements)
     if not skip_ffmpeg:
         ensure_ffmpeg(venv_python, force=force_ffmpeg)
     if not skip_model:
         ensure_model(venv_python, force=force_model)
-    return runtime_summary()
+    summary = runtime_summary()
+    if lan_enabled:
+        base_url, model = get_lan_vlm_endpoint(lan_cfg)
+        summary["vlm_backend"] = "ollama"
+        summary["lan_vlm_base_url"] = base_url
+        summary["lan_vlm_model"] = model
+    else:
+        summary["vlm_backend"] = "openvino"
+    return summary
 
 
 def parse_args() -> argparse.Namespace:

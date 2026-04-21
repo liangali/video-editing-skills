@@ -38,19 +38,31 @@ analyze_video.py - 阶段 2：纯 Python 视频分析，替代 FLAMA。
     python scripts/analyze_video.py --video-dir "D:\\videos" --output out.json --device CPU --seg-duration 2.0
 """
 
+# 代码导读补充：
+# - 该脚本将视频按固定时长切段，并对每段抽帧后调用 VLM 生成描述。
+# - 若传入 --theme，会启用“两阶段模式”：先做主题判定，再对命中段生成详细描述。
+# - 输出 `output_vlm.json` 结构与下游选片脚本兼容，是阶段 3 的核心输入。
+
 import argparse
+import base64
+import io
 import json
 import math
 import re
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from skill_runtime import (
     DEFAULT_MODEL_DIR,
     SKILL_DIR,
     ensure_skill_requirements,
+    get_lan_vlm_endpoint,
+    is_lan_vlm_enabled,
+    load_lan_vlm_config,
     maybe_reexec_in_skill_venv,
 )
 
@@ -237,6 +249,71 @@ def init_vlm_pipeline(model_dir: Path, device: str = "GPU"):
     return pipeline
 
 
+def init_ollama_runtime(
+    base_url: str,
+    model: str,
+    timeout_sec: int = 120,
+    retry: int = 2,
+) -> dict:
+    """初始化局域网 Ollama 运行时配置。"""
+    runtime = {
+        "base_url": base_url.rstrip("/"),
+        "model": model,
+        "timeout_sec": max(1, int(timeout_sec)),
+        "retry": max(0, int(retry)),
+    }
+    print(f"[VLM] 使用局域网模型：{runtime['model']} @ {runtime['base_url']}")
+    return runtime
+
+
+def _encode_frame_to_b64_jpeg(frame: Image.Image) -> str:
+    buf = io.BytesIO()
+    frame.convert("RGB").save(buf, format="JPEG", quality=90)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+def analyze_segment_ollama(
+    runtime: dict,
+    frames: list[Image.Image],
+    prompt: str,
+    max_new_tokens: int = 100,
+) -> str:
+    """通过 Ollama API 分析帧序列，返回文本描述。"""
+    images = [_encode_frame_to_b64_jpeg(f) for f in frames]
+    body = {
+        "model": runtime["model"],
+        "prompt": prompt,
+        "images": images,
+        "stream": False,
+        "options": {
+            "num_predict": int(max_new_tokens),
+            "repeat_penalty": 1.2,
+        },
+    }
+    req = urllib.request.Request(
+        f"{runtime['base_url']}/api/generate",
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    attempt = 0
+    last_error: str | None = None
+    while attempt <= runtime["retry"]:
+        try:
+            with urllib.request.urlopen(req, timeout=runtime["timeout_sec"]) as resp:
+                raw = resp.read().decode("utf-8", errors="ignore")
+            data = json.loads(raw)
+            result = str(data.get("response", "")).strip()
+            for term in ["<|im_end|>", "<|endoftext|>"]:
+                result = result.replace(term, "")
+            result = result.strip()
+            return result if result else "（模型未生成有效描述）"
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as e:
+            attempt += 1
+            last_error = str(e)
+    raise RuntimeError(f"Ollama 请求失败：{last_error}")
+
+
 def analyze_segment_vlm(
     pipeline,
     frames: list[Image.Image],
@@ -275,13 +352,26 @@ def analyze_segment_vlm(
     return result if result else "（模型未生成有效描述）"
 
 
+def analyze_segment(
+    backend: str,
+    runtime_or_pipeline,
+    frames: list[Image.Image],
+    prompt: str,
+    max_new_tokens: int = 100,
+) -> str:
+    if backend == "ollama":
+        return analyze_segment_ollama(runtime_or_pipeline, frames, prompt, max_new_tokens)
+    return analyze_segment_vlm(runtime_or_pipeline, frames, prompt, max_new_tokens)
+
+
 # ---------------------------------------------------------------------------
 # 单视频处理
 # ---------------------------------------------------------------------------
 
 def process_video(
     video_path: Path,
-    pipeline,
+    runtime_or_pipeline,
+    backend: str,
     detail_prompt: str,
     theme: str | None,
     seg_duration: float,
@@ -315,19 +405,21 @@ def process_video(
             try:
                 if theme and theme.strip():
                     judge_prompt = build_theme_judgement_prompt(theme.strip())
-                    judge_raw = analyze_segment_vlm(
-                        pipeline, frames, judge_prompt, max_new_tokens=32
+                    judge_raw = analyze_segment(
+                        backend, runtime_or_pipeline, frames, judge_prompt, max_new_tokens=32
                     )
                     label = parse_theme_label(judge_raw) or "不符合"
                     if label in ("符合", "部分符合"):
-                        detail_desc = analyze_segment_vlm(
-                            pipeline, frames, detail_prompt, max_tokens
+                        detail_desc = analyze_segment(
+                            backend, runtime_or_pipeline, frames, detail_prompt, max_tokens
                         )
                         desc = f"主题判定：{label}\n{detail_desc}"
                     else:
                         desc = f"主题判定：{label}"
                 else:
-                    desc = analyze_segment_vlm(pipeline, frames, detail_prompt, max_tokens)
+                    desc = analyze_segment(
+                        backend, runtime_or_pipeline, frames, detail_prompt, max_tokens
+                    )
             except Exception as e:
                 desc = f"分析失败：{e}"
                 print(f"    段 {seg_id} VLM 推理失败：{e}", file=sys.stderr)
@@ -409,9 +501,12 @@ def main() -> int:
     output_path = Path(args.output).resolve()
     model_dir = Path(args.model_dir) if args.model_dir else DEFAULT_MODEL_DIR
     ffprobe_path = str(SKILL_DIR / "bin" / "ffprobe.exe")
+    lan_cfg = load_lan_vlm_config()
+    lan_enabled = is_lan_vlm_enabled(lan_cfg)
+    backend = "ollama" if lan_enabled else "openvino"
 
     # 验证模型目录
-    if not model_dir.is_dir():
+    if backend == "openvino" and not model_dir.is_dir():
         print(f"错误：模型目录不存在：{model_dir}", file=sys.stderr)
         print("请先重新执行阶段 1：prepare_workspace.py，或运行 bootstrap.py", file=sys.stderr)
         return 1
@@ -423,8 +518,12 @@ def main() -> int:
         return 1
 
     print(f"[分析] 找到 {len(videos)} 个视频文件")
-    print(f"[分析] 模型：{model_dir}")
-    print(f"[分析] 设备：{args.device}")
+    if backend == "openvino":
+        print(f"[分析] 模型：{model_dir}")
+        print(f"[分析] 设备：{args.device}")
+    else:
+        base_url, model = get_lan_vlm_endpoint(lan_cfg)
+        print(f"[分析] 后端：Ollama ({base_url}, model={model})")
     print(f"[分析] 段时长：{args.seg_duration}s，每段 {args.frames_per_seg} 帧，缩放 {args.scale}")
 
     detail_prompt = args.prompt
@@ -441,7 +540,18 @@ def main() -> int:
 
     # 初始化 VLM
     total_start = time.time()
-    pipeline = init_vlm_pipeline(model_dir, args.device)
+    if backend == "openvino":
+        runtime_or_pipeline = init_vlm_pipeline(model_dir, args.device)
+    else:
+        base_url, model = get_lan_vlm_endpoint(lan_cfg)
+        timeout_sec = int((lan_cfg or {}).get("timeout_sec", 120))
+        retry = int((lan_cfg or {}).get("retry", 2))
+        runtime_or_pipeline = init_ollama_runtime(
+            base_url=base_url,
+            model=model,
+            timeout_sec=timeout_sec,
+            retry=retry,
+        )
 
     # 逐视频处理
     results = []
@@ -450,7 +560,8 @@ def main() -> int:
         print(f"\n[{i+1}/{len(videos)}] {pct}% {video_path.name}")
         result = process_video(
             video_path=video_path,
-            pipeline=pipeline,
+            runtime_or_pipeline=runtime_or_pipeline,
+            backend=backend,
             detail_prompt=detail_prompt,
             theme=theme,
             seg_duration=args.seg_duration,
